@@ -1,0 +1,4 @@
+^renv$
+^renv\.lock$
+^CausalityExtraction\.Rproj$
+^\.Rproj\.user$
