@@ -35,7 +35,7 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
     model   = ft_model,
     newdata = hypothesis_entity,
     rval    = "dense"
-    ) %>%
+  ) %>%
     as.data.frame()
 
   ## Assign prediction column names
@@ -46,7 +46,7 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
     response <- vector(
       mode   = "logical",
       length = length(hypothesis_entity)
-      )
+    )
 
     for (i in seq_along(hypothesis_entity)){
       response[i] <- TRUE
@@ -69,8 +69,8 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
           condition = .[[1]] > .[[2]],
           true      =  FALSE,
           false     = TRUE
-          )
-        ) %>%
+        )
+      ) %>%
       dplyr::pull(Response)
 
   }
@@ -83,7 +83,7 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
   output_hypothesis <- vector(
     mode   = "list",
     length = 2
-    )
+  )
 
   output_hypothesis[[1]] <- hypothesis_causality
   output_hypothesis[[2]] <- hypothesis_entity
@@ -91,11 +91,6 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
   output_hypothesis
 }
 
-
-#' Extract Hypotheses
-#' The following function accepts processed text in character vector form
-#' and returns hypothesis statements.
-#
 
 #' Extract hypothesis statements
 #'
@@ -113,7 +108,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   processing_text <- stringr::str_c(
     input_text,
     collapse = " "
-    )
+  )
 
   processing_text <- tokenizers::tokenize_sentences(
     processing_text,
@@ -125,7 +120,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
     string      = processing_text,
     pattern     = "  ",
     replacement = " "
-    )
+  )
 
   # Normalize text case
   processing_text <- tolower(processing_text)
@@ -135,7 +130,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   h_match <- processing_text %>%
     stringr::str_match(
       pattern = regex_hypo_marker
-      )
+    )
 
   # Extract hypotheses number
   h_match_num <- h_match[,2]
@@ -172,7 +167,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   logical_hypothesis_2 <- stringr::str_detect(
     string  = h_statements,
     pattern = "hypo"
-    )
+  )
 
   ## Drop Statements that Do Not Include "Hypo"
   h_statements <- h_statements[logical_hypothesis_2]
@@ -189,12 +184,12 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   logical_hypothesis_3 <- vector(
     mode   = "logical",
     length = length(h_number)
-    )
+  )
 
   h_tracker <- vector(
     mode   = "integer",
     length = length(h_number)
-    )
+  )
 
   for (i in seq_along(h_number)) {
     num <- h_number[i]
@@ -246,7 +241,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
       output_hypothesis <- apply_fasttext(
         hypothesis_entity,
         hypothesis_causality
-        )
+      )
 
       hypothesis_causality <- output_hypothesis[[1]]
       hypothesis_entity <- output_hypothesis[[2]]
@@ -259,13 +254,13 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
     hypothesis_entity,
     hypothesis_causality,
     stringsAsFactors = FALSE
-    )
+  )
 
   # Rename and add Hypothesis Number
   df_hypothesis <- df_hypothesis %>%
     dplyr::rename(
       hypothesis = hypothesis_entity
-      ) %>%
+    ) %>%
     dplyr::mutate(
       h_id = paste0("h_", dplyr::row_number())
     ) %>%

@@ -2,10 +2,7 @@
 % Please edit documentation in R/hypothesis.R
 \name{hypothesis_extraction}
 \alias{hypothesis_extraction}
-\title{Extract Hypotheses
-The following function accepts processed text in character vector form
-and returns hypothesis statements.
-Extract hypothesis statements}
+\title{Extract hypothesis statements}
 \usage{
 hypothesis_extraction(input_text, apply_model = TRUE)
 }

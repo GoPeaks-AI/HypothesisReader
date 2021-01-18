@@ -47,7 +47,8 @@ regex_return_num <- "(\\d)+"
 #'
 #' @param input_vector text to be tested by regex
 #' @param regex Regex input
-#' @param remove
+#' @param remove_string String to be converted into regex if [regex] is not
+#'  provided
 #' @param location text indicating if removal will be based on "start", "end",
 #'  or "any" location in the [input_vector]
 #'  @param match Flag indicating if a match should be "exact" or "partial.
@@ -78,20 +79,20 @@ remove_if_detect <- function(input_vector,
     logical_vector <- stringr::str_starts(
       string  = input_vector,
       pattern = regex
-      )
+    )
 
   } else if ( location == "end") {
     # Check End of String
     logical_vector <- stringr::str_ends(
       string  = input_vector,
       pattern = regex
-      )
+    )
 
   } else {
     logical_vector <- stringr::str_detect(
       string = input_vector,
       pattern = regex
-      )
+    )
   }
 
 
@@ -126,7 +127,7 @@ concat_hyphen_string <- function(string_1, string_2){
     string = string_1,
     start  = 1,
     end    = nchar(string_1) - 1
-    )
+  )
 
   # Concatenate strings
   output <- stringr::str_c(string_1, string_2)
@@ -153,7 +154,7 @@ concat_hypen_vector <- function(input_vector){
     hyphen_test <- stringr::str_ends(
       string  = item,
       pattern = "-"
-      )
+    )
 
     # Execute if test = TRUE
     while (hyphen_test){
@@ -164,7 +165,7 @@ concat_hypen_vector <- function(input_vector){
       hyphen_test <- stringr::str_ends(
         string  = item,
         pattern = "-"
-        )
+      )
 
       j = j + 1
     }
@@ -189,37 +190,37 @@ concat_hypen_vector <- function(input_vector){
 standardize_hypothesis <- Vectorize(
   function(input_string, regex_hypothesis_string){
 
-  # Extract identified value
-  extract_phrase <- stringr::str_extract(
-    string  = input_string,
-    pattern = regex_hypothesis_string
+    # Extract identified value
+    extract_phrase <- stringr::str_extract(
+      string  = input_string,
+      pattern = regex_hypothesis_string
     )
 
-  # Check if hypothesis detected
-  if (!is.na(extract_phrase)){
+    # Check if hypothesis detected
+    if (!is.na(extract_phrase)){
 
-    # Extract hypothesis number
-    extact_number <- stringr::str_extract(
-      string  = extract_phrase,
-      pattern = regex_return_num
+      # Extract hypothesis number
+      extact_number <- stringr::str_extract(
+        string  = extract_phrase,
+        pattern = regex_return_num
       )
 
-    # Create new string
-    replacement_string <- paste0("<split>Hypo ", extact_number, ": ")
+      # Create new string
+      replacement_string <- paste0("<split>Hypo ", extact_number, ": ")
 
-    # Replace hypothesis with new value
-    output_string <- stringr::str_replace(
-      string      = input_string,
-      pattern     = regex_hypothesis_string,
-      replacement = replacement_string
+      # Replace hypothesis with new value
+      output_string <- stringr::str_replace(
+        string      = input_string,
+        pattern     = regex_hypothesis_string,
+        replacement = replacement_string
       )
 
-  } else {
-    output_string <- input_string
+    } else {
+      output_string <- input_string
 
-  }
+    }
 
-  output_string
+    output_string
 
   }
 )
@@ -284,7 +285,7 @@ process_text <- function(input_path){
 
   # n < 1 ----------------------------------------------------------------------
   ## Drop elements with length of 1 or less
-   logical_length <- nchar(processing_text) > 1
+  logical_length <- nchar(processing_text) > 1
   processing_text <- processing_text[logical_length]
 
   # Drop any NA elements
@@ -334,13 +335,13 @@ process_text <- function(input_path){
   processing_text <- stringr::str_c(
     processing_text,
     collapse = line_split_indicator
-    )
+  )
 
   # Remove content within parenthesis
   processing_text <- stringr::str_remove_all(
     string  = processing_text,
     pattern = regex_parens
-    )
+  )
 
   # Split single string back into character vectors
   processing_text <- stringr::str_split(
@@ -368,7 +369,7 @@ process_text <- function(input_path){
   processing_text <- stringr::str_c(
     processing_text,
     collapse = " "
-    )
+  )
 
   processing_text <- tokenizers::tokenize_sentences(
     processing_text,
@@ -380,7 +381,7 @@ process_text <- function(input_path){
     string      = processing_text,
     pattern     = "  ",
     replacement = " "
-    )
+  )
 
   # Downloading (Second Time) --------------------------------------------------
   ## Remove elements which contain terms related to downloading files
@@ -403,12 +404,12 @@ process_text <- function(input_path){
   regex_hypo_str <- gen_regex(
     input_string = regex_hypo,
     match        = "partial"
-    )
+  )
 
   processing_text <- standardize_hypothesis(
     input_string            = processing_text,
     regex_hypothesis_string = regex_hypo_str
-    )
+  )
 
   ## Drop object names
   processing_text <- unname(processing_text)
@@ -419,19 +420,19 @@ process_text <- function(input_path){
     string      = processing_text,
     pattern     = ": :",
     replacement = ":"
-    )
+  )
 
   ## Remove extra white space
   processing_text <- stringr::str_squish(
     string = processing_text
-    )
+  )
 
   ## Replace colon/period instances (: .)
   processing_text <- stringr::str_replace_all(
     string      = processing_text,
     pattern     = ": \\.",
     replacement = ":"
-    )
+  )
 
   processing_text
 }

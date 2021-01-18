@@ -23,3 +23,13 @@ gen_regex <- function(input_string, match){
 
   regex_string
 }
+
+
+#' Verify input is not null
+#'
+#' Returns a boolean verifying is the provided input is not null
+#'
+#' @param x input
+#' @noRd
+
+is.not.null <- function(x) !is.null(x)

@@ -72,7 +72,7 @@ gen_entity_class_index <- function(pred_classes){
   index_entities <- vector(
     mode   = "list",
     length = 2
-    )
+  )
 
   index_entities[[1]] = entity_idx_1
   index_entities[[2]] = entity_idx_2
@@ -141,7 +141,7 @@ trim_overlapping_entities <- function(entity_index_input){
         entity_idx_1 <- entity_idx_1[-entity_1_dim]
       }
 
-    # Initial entity class in hypothesis statement - Entity 2
+      # Initial entity class in hypothesis statement - Entity 2
     } else {
       if (span_entity_2 >= span_entity_1){
         entity_2_dim <- length(entity_idx_2)
@@ -156,7 +156,7 @@ trim_overlapping_entities <- function(entity_index_input){
     entity_index_trim <- vector(
       mode = "list",
       length = 2
-      )
+    )
 
     entity_index_trim[[1]] = entity_idx_1
     entity_index_trim[[2]] = entity_idx_2
@@ -182,7 +182,7 @@ trim_outlier_indexes <- function(entity_index_input) {
   entity_index_output <- vector(
     mode   = "list",
     length = 2
-    )
+  )
 
   for (i in seq_along(entity_index_input)){
     # Define index vector
@@ -228,7 +228,7 @@ index_to_entity <- function(hypothesis, entity_index_input) {
   entity_text_output <- vector(
     mode = "character",
     length = 2
-    )
+  )
 
   # Convert hypothesis to tokens
   tokens_all <- stringr::str_split(
@@ -248,14 +248,14 @@ index_to_entity <- function(hypothesis, entity_index_input) {
     # Extract entity tokens
     tokens_entity <- tokens_all[
       min(entity_index_input[[i]]):
-      max(entity_index_input[[i]])
+        max(entity_index_input[[i]])
     ]
 
     # Concatenate tokens to text strings
     entity_text_output[i] <- stringr::str_c(
       tokens_entity,
       collapse = " "
-      )
+    )
   }
 
   entity_text_output
@@ -323,7 +323,7 @@ entity_extraction <- function(hypothesis_df){
   lst_entity_text_output <- vector(
     mode = "list",
     length = num_hypothesis
-    )
+  )
 
   for (i in seq_along(hypothesis_vec)){
     # Extract hypothesis
@@ -341,11 +341,11 @@ entity_extraction <- function(hypothesis_df){
     do.call(
       rbind,
       lapply(lst_entity_text_output, as.vector))
-    ) %>%
+  ) %>%
     dplyr::rename(
       cause  = V1,
       effect = V2
-      )
+    )
 
   # Replace missing entity tag
   missing_entity_tag <- "<Entity Not Detected>"
@@ -359,11 +359,11 @@ entity_extraction <- function(hypothesis_df){
       effect = stringr::str_remove_all(
         string  = effect,
         pattern = "\\."
-        )
+      )
     ) %>%
     dplyr::mutate(
       cause = as.character(cause)
-      )
+    )
 
   entity_text_output_df
 }
