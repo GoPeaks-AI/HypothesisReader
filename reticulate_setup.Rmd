@@ -1,0 +1,63 @@
+---
+title: "Reticulate Setup"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+```
+
+```{r}
+reticulate::py_config()
+```
+
+
+```{r}
+virtualenv_dir = Sys.getenv('VIRTUALENV_NAME')
+python_path = Sys.getenv('PYTHON_PATH')
+
+virtualenv_list <-  reticulate::virtualenv_list()
+
+PYTHON_DEPENDENCIES = c("numpy", "joblib", "scikit-learn", "tensorflow",
+                        "pdfminer", "nltk")
+
+reticulate::virtualenv_create(envname = virtualenv_dir, python = python_path)
+
+reticulate::virtualenv_install(virtualenv_dir, packages = PYTHON_DEPENDENCIES,
+                               ignore_installed=TRUE)
+
+reticulate::use_virtualenv(virtualenv_dir, required = TRUE)
+```
+
+# Download Wordnet from NLTK
+
+```{r}
+nltk <- reticulate::import("nltk")
+
+nltk$download('wordnet')
+```
+
+```{r}
+# General
+np <- import("numpy")
+
+tf <- import("tensorflow")
+
+# Modeling
+## Sci-Kit Learn Model Selection
+skl_ms <- import("sklearn.model_selection")
+
+## Sci-Kit Learn Linear Models
+skl_lm <- import("sklearn.linear_model")
+
+## Sci-Kit Learn Support Vector Machines 
+skl_svm <- import("sklearn.svm")
+
+## Sci-Kit Learn Naive Bayes 
+skl_nb <- import("sklearn.naive_bayes")
+```
+
