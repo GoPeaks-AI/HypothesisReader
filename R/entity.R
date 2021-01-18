@@ -4,7 +4,6 @@ np <- reticulate::import("numpy")
 tf <- reticulate::import("tensorflow")
 
 ## Entity Extraction Model
-path_model <- "./../models/entity_extraction/"
 get_path_entity_model <- function() {
   system.file("extdata", "models","entity_extraction",
               package = 'CausalityExtraction')
@@ -302,26 +301,12 @@ entity_extraction_indv <- function(hypothesis) {
 }
 
 
-# ENTITY EXTRACTION WRAPPER - MULTIPLE
-#' The following function executes the full Entity Extraction for multiple
-#' hypotheses.
-#'
-#' INPUT
-#' * hypothesis_df:
-#'     Dataframe output from Extract Hypothesis process
-#'
-#' OUTPUT
-#' * entity_text_output_df:
-#'     List containing the extracted entity text of all hypotheses(dataframe)
-#
-
 #' Extract entity clauses (multiple cases)
 #'
 #' Wrapper function. Executes all steps in the entity  extraction process for
 #' a multiple hypothesis statements.
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
-#'
 #'
 
 entity_extraction <- function(hypothesis_df){

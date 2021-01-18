@@ -2,8 +2,7 @@
 % Please edit documentation in R/entity.R
 \name{entity_extraction}
 \alias{entity_extraction}
-\title{The following function executes the full Entity Extraction for multiple
-hypotheses.}
+\title{Extract entity clauses (multiple cases)}
 \usage{
 entity_extraction(hypothesis_df)
 }
@@ -11,20 +10,6 @@ entity_extraction(hypothesis_df)
 \item{hypothesis_df}{hypothesis statement output of \code{\link[=hypothesis_extraction]{hypothesis_extraction()}}}
 }
 \description{
-INPUT
-\itemize{
-\item hypothesis_df:
-Dataframe output from Extract Hypothesis process
-}
-}
-\details{
-OUTPUT
-\itemize{
-\item entity_text_output_df:
-List containing the extracted entity text of all hypotheses(dataframe)
-Extract entity clauses (multiple cases)
-}
-
 Wrapper function. Executes all steps in the entity  extraction process for
 a multiple hypothesis statements.
 }
