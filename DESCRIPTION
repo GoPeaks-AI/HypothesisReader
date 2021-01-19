@@ -35,4 +35,5 @@ Imports:
     purrr,
     tidyr,
     magrittr,
-    tokenizers
+    tokenizers,
+    memoise
