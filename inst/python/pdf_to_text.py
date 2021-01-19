@@ -24,7 +24,7 @@ OUTPUT
  - pdf_txt: raw text of input PDF
 '''
 
-def pdf_to_text_pdfminer(path):
+def pdf_to_text(path):
     # Open PDF File
     pdf_file = open(path, 'rb')
     
