@@ -1,34 +1,14 @@
-# Import -----------------------------------------------------------------------
 ## Python Modules
-np <- reticulate::import("numpy")
-tf <- reticulate::import("tensorflow")
+np <- reticulate::import("numpy", delay_load = TRUE)
+tf <- reticulate::import("tensorflow", delay_load = TRUE)
 
 ## Entity Extraction Model
 get_path_entity_model <- function() {
   system.file("extdata", "models","entity_extraction",
               package = 'CausalityExtraction')
 }
-model_entity <- tf$keras$models$load_model(get_path_entity_model())
 
-
-#' Functions -------------------------------------------------------------------
-#' VECTOR IS EMPTY
-#' The following function returns a logical value indicating if a vector is
-#' empty.
-#'
-#' #' INPUT
-#' * input_vector:
-#'     Input vector (vector)
-#'
-#' OUTPUT
-#'  *  Logic test output indicating if the vector is empty.
-#
-# vector_is_empty <- function(input_vector) {
-#   return(length(input_vector) == 0)
-# }
-
-
-
+model_entity <-  tf$keras$models$load_model(get_path_entity_model())
 
 #' Generate entity class prediction
 #'
@@ -41,7 +21,7 @@ model_entity <- tf$keras$models$load_model(get_path_entity_model())
 
 
 gen_entity_class <- function(hypothesis) {
-  # Convert hypothesis string to numpy array
+  # Convert to Numpy Array
   hypothesis_np <- np$array(hypothesis)
 
   # Generate predictions
@@ -79,21 +59,6 @@ gen_entity_class_index <- function(pred_classes){
 
   index_entities
 }
-
-
-#' TRIM OVERLAPPING ENTITIES
-#' The following function trims entity indexes if class 1 and class 2 entities
-#' overlap.
-#'
-#' INPUT
-#' * entity_index_input:
-#'     List containing index vectors for each entity class (list)
-#'
-#' OUTPUT
-#' * entity_index_output:
-#'     List containing index vectors for each entity class after
-#'     trimming process (list)
-#
 
 
 #' Trim overlapping entity indexes.

@@ -8,15 +8,15 @@ CausalityExtraction(file_path = NULL, folder_path = NULL)
 }
 \arguments{
 \item{file_path}{Path or character vector of paths to PDF documents to be
-processed.This parameter or \link{folder_path} must be provided. If both
+processed.This parameter or \strong{folder_path} must be provided. If both
 parameters are provided, the input in this parameter will be processed and
-\link{folder_path} will be ignored.}
+\strong{folder_path} will be ignored.}
 
 \item{folder_path}{Path to folder containing PDF documents to be
 processed. All PDF documents in the folder specified will be processed.
 This call is not recursive, so no PDF documents in sub-folders will be
-processed. This parameter or \link{file_path} must be provided. If both
-parameters are provided, the input in \link{file_path} will be processed and
+processed. This parameter or \strong{file_path} must be provided. If both
+parameters are provided, the input in \strong{file_path} will be processed and
 this parameter will be ignored.}
 }
 \description{

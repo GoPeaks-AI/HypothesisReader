@@ -1,17 +1,16 @@
 # Import ----------------------------------------------------------------------
 ## Python Modules
-np        <- reticulate::import("numpy")
-joblib    <- reticulate::import("joblib")
-nltk_stem <- reticulate::import("nltk.stem")
+joblib    <- reticulate::import("joblib", delay_load = TRUE)
+nltk_stem <- reticulate::import("nltk.stem", delay_load = TRUE)
+np <- reticulate::import("numpy", delay_load = TRUE)
 
 ## Causality Classification Model
-get_path_causality_model <- "./../models/causality_bow_pipeline_logistic_regression.pkl"
-
 get_path_causality_model <- function() {
   system.file("extdata", "models",
               "causality_bow_pipeline_logistic_regression.pkl",
               package = 'CausalityExtraction')
 }
+
 model_causality <- joblib$load(get_path_causality_model())
 
 ## Regex
@@ -30,6 +29,8 @@ pattern_punct <- "[[:punct:]]"
 #' @noRd
 
 gen_causality_model_input <- function(hypothesis_df) {
+  nltk$download('wordnet')
+
   # For R CMD Checks
   causal_statement <- cause <- effect  <- row_id <- sentence <- NULL
   word <- word_lemm <- NULL
