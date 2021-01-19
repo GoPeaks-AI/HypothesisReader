@@ -37,7 +37,6 @@ mem_load_entity_model <- memoise::memoise(load_entity_model)
 #'
 #' @noRd
 
-
 gen_entity_class <- function(hypothesis) {
   model_entity <- NULL
 
@@ -352,6 +351,6 @@ entity_extraction <- function(hypothesis_df){
     dplyr::mutate(
       cause = as.character(cause)
     )
-
   entity_text_output_df
+
 }
