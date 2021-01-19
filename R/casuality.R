@@ -1,5 +1,3 @@
-#' Functions -------------------------------------------------------------------
-#'
 #' Retrieve path to causality classification model
 #'
 #' Retrieves the path to the causality classification model. This prevents a
@@ -30,8 +28,18 @@ load_causality_model <- function() {
 mem_load_causality_model <- memoise::memoise(load_causality_model)
 
 
-#' Generate causality classification input
+#' Download wordnet library for NLTK lemmatizer
 #'
+#' Downloads the wordnet library from the NLTK python module. This function is
+#' wrapper with **memoise** so that it is only executed once.
+#'
+#' @noRd
+
+download_wordnet <- function() (nltk$download('wordnet'))
+
+mem_download_wordnet <- memoise::memoise(download_wordnet)
+
+#' Generate causality classification input
 #'
 #' Processes the extracted hypothesis statements into the format for the
 #' causality class model input.
@@ -112,16 +120,20 @@ gen_causality_model_input <- function(hypothesis_df) {
     length = length(tokens)
   )
 
+  ### Download wordnet library
+  mem_download_wordnet()
+
+  ### Initialize lemmatizer
   lemmatizer <- nltk_stem$WordNetLemmatizer()
 
-  ### Execute Lemmatization
+  ### Execute lemmatization
   for (i in seq_along(tokens)) {
     token = tokens[i]
     token_lemm <- lemmatizer$lemmatize(token)
     tokens_lemm[i] = token_lemm
   }
 
-  ### Replace Lemmatized Words and Convert Tokens to Sentences as Vector
+  ### Replace lemmatized words and convert tokens to sentences as vector
   model_input <- causality_df %>%
     dplyr::bind_cols(tokens_lemm) %>%
     dplyr::rename(word_lemm = "...3") %>%
