@@ -19,7 +19,8 @@
 
 CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   # For R CMD Checks
-  causal_relationship <- causality_pred <- cause <- effect <- file_name <- h_id <- hypothesis <- hypothesis_num <- NULL
+  causal_relationship <- causality_pred <- cause <- effect <- file_name <- NULL
+  h_id <- hypothesis <- hypothesis_num <- NULL
 
   # Generate File or List of Files
   pdf_path <- c()
@@ -54,7 +55,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
         )[[1]])
 
     ## Text Pre-processing
-    ### Wrap in Try to catch failed pdf to text conversions
+    ### Wrap in tryCatch to catch failed pdf to text conversions
     possible_error <- tryCatch({
       text_processed <- process_text(pdf)
 

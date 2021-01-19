@@ -1,25 +1,37 @@
-# Import -----------------------------------------------------------------------
-## Python Modules
-nltk_stem <- reticulate::import("nltk.stem", delay_load = TRUE)
-joblib    <- reticulate::import("joblib", delay_load = TRUE)
-np        <- reticulate::import("numpy", delay_load = TRUE)
+#' Functions -------------------------------------------------------------------
+#'
+#' Retrieve path to causality classification model
+#'
+#' Retrieves the path to the causality classification model. This prevents a
+#' hard path being defined, which would cause an error when verifyin
+#' staged installation.
+#'
+#' @noRd
 
-## Causality Classification Model
 get_path_causality_model <- function() {
   system.file("extdata", "models",
               "causality_bow_pipeline_logistic_regression.pkl",
               package = 'CausalityExtraction')
 }
 
-model_causality <- joblib$load(get_path_causality_model())
-
-## Regex
-pattern_punct <- "[[:punct:]]"
-
-
-#' Functions -------------------------------------------------------------------
+#' Load causality classification model
 #'
+#' Loads the causality classification model. Wrapped in memoise to avoid
+#' repeated loading of the same model.
+#'
+#' @noRd
+
+load_causality_model <- function() {
+  model_causality <- NULL
+  model_causality <- joblib$load(get_path_causality_model())
+  model_causality
+}
+
+mem_load_causality_model <- memoise::memoise(load_causality_model)
+
+
 #' Generate causality classification input
+#'
 #'
 #' Processes the extracted hypothesis statements into the format for the
 #' causality class model input.
@@ -32,6 +44,9 @@ gen_causality_model_input <- function(hypothesis_df) {
   # For R CMD Checks
   causal_statement <- cause <- effect  <- row_id <- sentence <- NULL
   word <- word_lemm <- NULL
+
+  # Define regex
+  pattern_punct <- "[[:punct:]]"
 
   # Generate Datasets ----------------------------------------------------------
   ## Extracted entities
@@ -134,6 +149,11 @@ gen_causality_model_input <- function(hypothesis_df) {
 #
 
 gen_causality_class <- function(model_input) {
+  model_causality <- NULL
+
+  # Load causality model
+  model_causality <- mem_load_causality_model()
+
   # Convert to numpy array
   model_input_np <- np$array(model_input)
 

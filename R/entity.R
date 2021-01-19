@@ -1,14 +1,32 @@
-## Python Modules
-np <- reticulate::import("numpy", delay_load = TRUE)
-tf <- reticulate::import("tensorflow", delay_load = TRUE)
+#' Retrieve path to entity extraction model
+#'
+#' Retrieves the path to the entity extraction model. This prevents a
+#' hard path being defined, which would cause an error when verifying
+#' staged installation.
+#'
+#' @noRd
 
-## Entity Extraction Model
 get_path_entity_model <- function() {
   system.file("extdata", "models","entity_extraction",
               package = 'CausalityExtraction')
 }
 
-model_entity <-  tf$keras$models$load_model(get_path_entity_model())
+
+#' Load entity extraction model
+#'
+#' Loads the causality classification model. Wrapped in memoise to avoid
+#' repeated loading of the same model.
+#'
+#' @noRd
+
+load_entity_model <- function() {
+  model_entity <- NULL
+  model_entity <-  tf$keras$models$load_model(get_path_entity_model())
+  model_entity
+}
+
+mem_load_entity_model <- memoise::memoise(load_entity_model)
+
 
 #' Generate entity class prediction
 #'
@@ -21,6 +39,11 @@ model_entity <-  tf$keras$models$load_model(get_path_entity_model())
 
 
 gen_entity_class <- function(hypothesis) {
+  model_entity <- NULL
+
+  # Load entity extraction model
+  model_entity <- mem_load_entity_model()
+
   # Convert to Numpy Array
   hypothesis_np <- np$array(hypothesis)
 

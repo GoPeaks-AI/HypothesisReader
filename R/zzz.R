@@ -1,21 +1,15 @@
-# np <- NULL
-# tf <- NULL
-# joblib <- NULL
-# nltk_stem <- NULL
-#
-# .onLoad <- function(libname, pkgname) {
-#   # use superassignment to update global reference
-#   np <<- reticulate::import("numpy", delay_load = TRUE)
-#   tf <<- reticulate::import("tensorflow", delay_load = TRUE)
-#   joblib    <<- reticulate::import("joblib", delay_load = TRUE)
-#   nltk_stem <<- reticulate::import("nltk.stem", delay_load = TRUE)
-#   model_causality <- joblib$load(get_path_causality_model())
-# }
+# Initialize as null
+joblib <- nltk <- nltk_stem <- np <- tf <- NULL
 
-nltk <- NULL
 .onLoad <- function(libname, pkgname) {
-  reticulate::configure_environment(pkgname)
+  # Load Python Modules
+  # use super-assignment to update global reference
+  joblib    <<- reticulate::import("joblib",     delay_load = TRUE)
+  nltk      <<- reticulate::import("nltk",       delay_load = TRUE)
+  nltk_stem <<- reticulate::import("nltk.stem",  delay_load = TRUE)
+  np        <<- reticulate::import("numpy",      delay_load = TRUE)
+  tf        <<- reticulate::import("tensorflow", delay_load = TRUE)
 
-  nltk <<- reticulate::import("nltk", delay_load = TRUE)
-  nltk$download("wordnet")
+  # Allows user to load additional modules
+  reticulate::configure_environment(pkgname)
 }

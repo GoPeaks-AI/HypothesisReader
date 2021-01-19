@@ -37,7 +37,19 @@ regex_hypo <- c("h[0-9]{1,3}[a-zA-Z]\\:",
 ## Identify Numbers
 regex_return_num <- "(\\d)+"
 
-# Functions -------------------------------------------------------------------
+# Functions --------------------------------------------------------------------
+#' Retrieve path to python script
+#'
+#' Retrieves the path to python script for converting PDF files to text.
+#'
+#' @noRd
+
+get_path_pdf2text <- function() {
+  system.file("python", "pdf_to_text.py",
+              package = 'CausalityExtraction')
+}
+
+
 #' Remove string by regex expression
 #'
 #' Removes a string if it matches to the provided Regular Expression (regex). If a regex
@@ -226,7 +238,6 @@ standardize_hypothesis <- Vectorize(
 )
 
 
-
 #' Process PDF text
 #'
 #' Wrapper function. Executes all steps in the process flow converting raw
@@ -239,9 +250,10 @@ standardize_hypothesis <- Vectorize(
 #' @param input_path path to PDF file
 
 process_text <- function(input_path){
-
+  pdf_to_text <- NULL
   # Convert --------------------------------------------------------------------
-  input_text <- pdf_to_text_pdfminer(input_path)
+  reticulate::source_python(get_path_pdf2text())
+  input_text <- pdf_to_text(input_path)
 
   # Vectorize ------------------------------------------------------------------
   ## Split text into character vector
