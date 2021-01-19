@@ -13,19 +13,46 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
+```{r message=FALSE}
 library(CausalityExtraction)
 library(dplyr)
 ```
 
+# Inputs
 ```{r}
-sample_path <- "./inst/extdata/sample_documents/jv04amj[1].pdf"
+path_file_single <- "./../inst/extdata/sample_documents/jv04amj[1].pdf"
 
-df <- CausalityExtraction(sample_path)
+path_folder <- "./../inst/extdata/sample_documents/"
 
+path_file_mult <- list.files(
+  recursive  = FALSE, 
+  path       = path_folder, 
+  pattern    = ".pdf", 
+  full.names = TRUE
+  )
+```
+# Execte
+## Single File
+```{r}
+df_1 <- CausalityExtraction(
+  file_path = path_file_single
+  )
+df_1 %>% glimpse()
 ```
 
+## Multiple Files
 ```{r}
-df
+df_2 <- CausalityExtraction(
+  file_path = path_file_mult
+  )
+```
+
+## Folder
+```{r}
+df_3 <- CausalityExtraction(
+  folder_path = path_folder
+  )
+
+df_3
 ```
 
