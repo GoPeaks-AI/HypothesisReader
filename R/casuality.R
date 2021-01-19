@@ -1,8 +1,8 @@
 # Import -----------------------------------------------------------------------
 ## Python Modules
-joblib    <- reticulate::import("joblib", delay_load = TRUE)
 nltk_stem <- reticulate::import("nltk.stem", delay_load = TRUE)
-np <- reticulate::import("numpy", delay_load = TRUE)
+joblib    <- reticulate::import("joblib", delay_load = TRUE)
+np        <- reticulate::import("numpy", delay_load = TRUE)
 
 ## Causality Classification Model
 get_path_causality_model <- function() {
