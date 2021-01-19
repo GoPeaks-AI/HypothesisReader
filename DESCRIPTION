@@ -25,15 +25,16 @@ Imports:
     magrittr,
     reticulate,
     tokenizers
+
 Config/reticulate:
   list(
     packages = list(
-      list(package = "numpy"),
-      list(package = "joblib"),
-      list(package = "scikit-learn"),
-      list(package = "tensorflow"),
-      list(package = "pdfminer"),
-      list(package = "nltk")
+      list(package = "numpy", pip = TRUE),
+      list(package = "joblib", pip = TRUE),
+      list(package = "scikit-learn", pip = TRUE),
+      list(package = "tensorflow", pip = TRUE),
+      list(package = "pdfminer", pip = TRUE),
+      list(package = "nltk", pip = TRUE)
     )
   )
 
