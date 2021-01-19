@@ -1,4 +1,4 @@
-# Import ----------------------------------------------------------------------
+# Import -----------------------------------------------------------------------
 ## Python Modules
 joblib    <- reticulate::import("joblib", delay_load = TRUE)
 nltk_stem <- reticulate::import("nltk.stem", delay_load = TRUE)
@@ -29,8 +29,6 @@ pattern_punct <- "[[:punct:]]"
 #' @noRd
 
 gen_causality_model_input <- function(hypothesis_df) {
-  nltk$download('wordnet')
-
   # For R CMD Checks
   causal_statement <- cause <- effect  <- row_id <- sentence <- NULL
   word <- word_lemm <- NULL
