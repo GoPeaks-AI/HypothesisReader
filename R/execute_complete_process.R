@@ -14,6 +14,7 @@
 #'  parameters are provided, the input in **file_path** will be processed and
 #'  this parameter will be ignored.
 #'
+#'@export
 
 
 CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
