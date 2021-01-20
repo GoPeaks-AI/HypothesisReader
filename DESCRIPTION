@@ -2,23 +2,12 @@ Package: CausalityExtraction
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Evan",
+           family = "Canfield",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
+           email = "canfielder@gmail.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: What the package does (one paragraph).
-Config/reticulate:
-  list(
-    packages = list(
-      list(package = "joblib",       version = "1.0.0",    pip = TRUE),
-      list(package = "nltk",         version = "3.5",      pip = TRUE),
-      list(package = "numpy",        version = "1.19.2",   pip = TRUE),
-      list(package = "pdfminer",     version = "20191125", pip = TRUE),
-      list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
-      list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
-    )
-  )
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -38,3 +27,14 @@ Imports:
     tidyr,
     tidytext,
     tokenizers
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "joblib",       version = "1.0.0",    pip = TRUE),
+      list(package = "nltk",         version = "3.5",      pip = TRUE),
+      list(package = "numpy",        version = "1.19.2",   pip = TRUE),
+      list(package = "pdfminer",     version = "20191125", pip = TRUE),
+      list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
+      list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
+    )
+  )
