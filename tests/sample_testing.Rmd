@@ -20,7 +20,7 @@ library(dplyr)
 
 # Inputs
 ```{r}
-path_file_single <- "./../inst/extdata/sample_documents/jv04amj[1].pdf"
+path_file_single <- "./../inst/extdata/sample_documents/jv04amj.pdf"
 
 path_folder <- "./../inst/extdata/sample_documents/"
 
@@ -31,12 +31,14 @@ path_file_mult <- list.files(
   full.names = TRUE
   )
 ```
-# Execte
+
+# Execute
 ## Single File
 ```{r}
 df_1 <- CausalityExtraction(
   file_path = path_file_single
   )
+
 df_1 %>% glimpse()
 ```
 
@@ -45,6 +47,8 @@ df_1 %>% glimpse()
 df_2 <- CausalityExtraction(
   file_path = path_file_mult
   )
+
+df_2 %>% glimpse()
 ```
 
 ## Folder
@@ -53,6 +57,6 @@ df_3 <- CausalityExtraction(
   folder_path = path_folder
   )
 
-df_3
+df_3 %>% glimpse()
 ```
 
