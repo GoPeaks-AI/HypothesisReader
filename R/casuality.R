@@ -133,17 +133,19 @@ gen_causality_model_input <- function(hypothesis_df) {
     tokens_lemm[i] = token_lemm
   }
 
+  ### Convert to data frame
+  tokens_lemm_df <- data.frame(tokens_lemm)
+
   ### Replace lemmatized words and convert tokens to sentences as vector
   model_input <- causality_df %>%
-    dplyr::bind_cols(tokens_lemm) %>%
-    dplyr::rename(word_lemm = "...3") %>%
+    dplyr::bind_cols(tokens_lemm_df) %>%
     dplyr::group_by(row_id) %>%
     dplyr::mutate(
       sentence = stringr::str_c(
-        word_lemm,
+        tokens_lemm,
         collapse = " ")
     ) %>%
-    dplyr::select(-word, -word_lemm) %>%
+    dplyr::select(-word, -tokens_lemm) %>%
     dplyr::distinct() %>%
     dplyr::pull(sentence)
 
