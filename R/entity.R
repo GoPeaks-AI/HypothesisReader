@@ -38,7 +38,9 @@ mem_load_entity_model <- memoise::memoise(load_entity_model)
 #' @noRd
 
 gen_entity_class <- function(hypothesis) {
-  model_entity <- NULL
+
+  # For R CMD Checks
+  model_entity <- X1 <- X2 <- X3 <- NULL
 
   # Load entity extraction model
   model_entity <- mem_load_entity_model()
@@ -47,10 +49,29 @@ gen_entity_class <- function(hypothesis) {
   hypothesis_np <- np$array(hypothesis)
 
   # Generate predictions
-  pred_classes_array<- model_entity$predict_classes(hypothesis_np)
+  pred_classes_array <- model_entity$predict(hypothesis_np)
 
-  # Convert predictions to vector
-  pred_classes <- as.vector(pred_classes_array)
+  # Convert predictions to dataframe
+  pred_classes_df <- data.frame(
+    t(
+      matrix(
+        data = pred_classes_array,
+        nrow = dim(pred_classes_array)[3],
+        byrow=TRUE
+      )
+    )
+  )
+
+  # Determine class prediction for each token
+  pred_classes <- pred_classes_df %>%
+    dplyr::mutate(
+      class = (purrr::pmap_int(
+        .l = list(X1, X2, X3),
+        .f = ~which.max(c(...))
+      )
+      ) - 1
+    ) %>%
+    dplyr::pull(class)
 
   pred_classes
 }
