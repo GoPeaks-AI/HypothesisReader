@@ -1,0 +1,20 @@
+---
+title: "Save Models"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+path_causality <- "./../inst/extdata/models/causality_bow_pipeline_logistic_regression.pkl"
+
+model <- joblib$load(path_causality)
+
+path_causality_r <- "./../inst/extdata/models/causality_r.rds"
+save(model, file =  path_causality_r)
+joblib$load(path_causality_r)
+
+```
+
