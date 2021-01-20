@@ -26,7 +26,7 @@ regex_hypo_marker <- "<split>hypo (.*?):"
 
 apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
   # For R CMD Checks
-  Response <- NULL
+  col_names <- Response <- NULL
 
   # Verify hypothesis class with fastText model
   ## Generate hypothesis class prediction dataframe
@@ -66,16 +66,16 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
     response <- hypothesis_pred %>%
       dplyr::mutate(
         Response = dplyr::if_else(
-          condition = .[[1]] > .[[2]],
-          true      =  FALSE,
-          false     = TRUE
+          condition = col_names[1] <= col_names[2],
+          true      = TRUE,
+          false     = FALSE
         )
       ) %>%
       dplyr::pull(Response)
 
   }
 
-  # Filter hypothesis statement vectors with logicil vector
+  # Filter hypothesis statement vectors with logical vector
   hypothesis_causality <- hypothesis_causality[response]
   hypothesis_entity <- hypothesis_entity[response]
 
