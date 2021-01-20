@@ -11,12 +11,12 @@ Description: What the package does (one paragraph).
 Config/reticulate:
   list(
     packages = list(
-      list(package = "numpy", pip = TRUE),
-      list(package = "nltk", pip = TRUE),
-      list(package = "joblib", pip = TRUE),
-      list(package = "scikit-learn", pip = TRUE),
-      list(package = "tensorflow", pip = TRUE),
-      list(package = "pdfminer", pip = TRUE)
+      list(package = "joblib",       version = "1.0.0",    pip = TRUE),
+      list(package = "nltk",         version = "3.5",      pip = TRUE),
+      list(package = "numpy",        version = "1.19.2",   pip = TRUE),
+      list(package = "pdfminer",     version = "20191125", pip = TRUE),
+      list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
+      list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
     )
   )
 License: MIT + file LICENSE
@@ -25,15 +25,16 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports: 
+    data.table,
+    dplyr,
+    fastTextR,
+    magrittr,
+    memoise,
+    purrr,
     reticulate,
     shiny,
-    dplyr,
-    tidytext,
-    quanteda,
-    fastTextR,
+    shinycssloaders,
     stringr,
-    purrr,
     tidyr,
-    magrittr,
-    tokenizers,
-    memoise
+    tidytext,
+    tokenizers
