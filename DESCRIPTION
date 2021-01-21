@@ -26,7 +26,9 @@ Imports:
     stringr,
     tidyr,
     tidytext,
-    tokenizers
+    tokenizers,
+    DT,
+    vroom
 Config/reticulate:
   list(
     packages = list(
