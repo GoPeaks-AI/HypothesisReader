@@ -10,6 +10,7 @@ joblib <- nltk <- nltk_stem <- np <- tf <- NULL
   np        <<- reticulate::import("numpy",      delay_load = TRUE)
   tf        <<- reticulate::import("tensorflow", delay_load = TRUE)
 
+
   # Allows user to load additional modules
   reticulate::configure_environment(pkgname)
 }
