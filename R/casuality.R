@@ -35,7 +35,12 @@ mem_load_causality_model <- memoise::memoise(load_causality_model)
 #'
 #' @noRd
 
-download_wordnet <- function() (nltk$download('wordnet'))
+download_wordnet <- function() {
+  # Captures NLTK download output message to prevent the user seeing it
+  x <- reticulate::py_capture_output({
+    nltk$download('wordnet')
+  })
+}
 
 mem_download_wordnet <- memoise::memoise(download_wordnet)
 
