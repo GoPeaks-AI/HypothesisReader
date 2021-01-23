@@ -35,12 +35,12 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
                             full.names = TRUE)
 
   } else (
-    print("File name(s) or folder path required.")
+    warning("File name(s) or folder path required.")
   )
 
   # Initialize
   lst_output <- vector(
-    mode = "list",
+    mode   = "list",
     length = length(pdf_paths)
     )
   i = 1
@@ -48,11 +48,13 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
 
     # Generate final table components
     ## File Name
-    file_name <- dplyr::last(
-      stringr::str_split(
-        string = pdf,
-        pattern = "/"
-        )[[1]])
+    # file_name <- dplyr::last(
+    #   stringr::str_split(
+    #     string = pdf,
+    #     pattern = "/"
+    #     )[[1]])
+
+    file_name <- basename(pdf)
 
     ## Text Pre-processing
     ### Wrap in tryCatch to catch failed pdf to text conversions
@@ -65,7 +67,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
       error_statement <- paste0("Error. File ",
                                 file_name,
                                 " could not be converted into text.")
-      print(error_statement)
+      message(error_statement)
 
     }
     )
@@ -121,6 +123,8 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
         i <- i + 1
       }
     }
+    pdf_complete_message <- paste("File ", file_name,": Complete")
+    message(pdf_complete_message)
   }
 
   # Group Output Table for All Files into one table

@@ -14,8 +14,8 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports: 
-    data.table,
     dplyr,
+    DT,
     fastTextR,
     magrittr,
     memoise,
@@ -27,7 +27,6 @@ Imports:
     tidyr,
     tidytext,
     tokenizers,
-    DT,
     vroom
 Config/reticulate:
   list(

@@ -1,5 +1,9 @@
+#' Causality Extraction Shiny App
+#'
 #' Shiny app for generating output tables with CausalityExtraction function.
 #' Designed to run locally on the users machine.
+#'
+#' @noRd
 
 
 # OPTIONS
@@ -13,11 +17,11 @@ ui <- shiny::fluidPage(
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       shiny::fileInput(
-        inputId = "file1",
-        label = "Upload PDF File(s)",
+        inputId  = "file",
+        label    = "Upload PDF File(s)",
         multiple = TRUE,
-        accept = c(".pdf"),
-        width = '90%'
+        accept   = c(".pdf"),
+        width    = '90%'
       )
     ),
     # MAIN
@@ -27,9 +31,12 @@ ui <- shiny::fluidPage(
           width = 12,
           shinycssloaders::withSpinner(
             ui_element = DT::DTOutput("causality_extraction_table"),
-            type = 1,
-            size = 3
-            )
+            type       = 1,
+            size       = 3
+            ),
+          shiny::downloadButton(
+            outputId = "download_table",
+            label    = "Download")
           )
         )
       )
@@ -41,43 +48,54 @@ ui <- shiny::fluidPage(
 server <- function(input, output) {
   # --- Reactive Values ---------------------------------------------------- #
 
-  # Convert Uploaded PDF to Text
+  # Generate CausalityExtraction output table
   causality_extraction_table <- shiny::reactive({
     # Wait until file is uploaded
-    shiny::req(input$file1)
-
-    file_path <- input$file1$datapath
+    shiny::req(input$file)
 
     # Execute package
-    output_table <- CausalityExtraction(file_path = file_path)
+    output_table <- gen_causality_extraction_table(input$file)
+    output_table
   })
-
 
 
   # --- Outputs to UI ----------------------------------------------------------
   # Display output table
   output$causality_extraction_table <- DT::renderDT(
     causality_extraction_table()
-  )
+    )
 
-  observeEvent(input$file1, {
-    print(paste0("File Path: ", input$file1$datapath))
-    df_file_name <- data.frame(basename(input$file1$name))
-    print(paste0(df_file_name))
-
-  })
 
   # --- Download ---------------------------------------------------------------
-  output$download <- downloadHandler(
+  output$download_table <- shiny::downloadHandler(
     filename = function() {
-      paste("causality_extraction_", Sys.Date(), ".csv", sep="")
+      paste(
+        "causality_extraction_",
+        Sys.Date(),
+        ".csv",
+        sep = ""
+        )
     },
     content = function(file) {
-      vroom::vroom_write(tidied(), file)
+      vroom::vroom_write(
+        causality_extraction_table(),
+        file, delim = ",")
     }
   )
 
 }
 
-# Run the application
-shiny::shinyApp(ui = ui, server = server)
+#' Launch CausalityExtraction Shiny app
+#'
+#' Launches the CausalityExtraction shiny app. Runs locally on the users
+#' machine.
+#'
+#'@export
+
+launch_app <- function() {
+
+  # Run the application
+
+  shiny::runApp(list(ui = ui, server = server),
+                   launch.browser = TRUE)
+}

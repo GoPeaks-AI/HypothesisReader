@@ -12,6 +12,18 @@ get_path_entity_model <- function() {
 }
 
 
+#' Retrieve path to entity extraction script
+#'
+#' Retrieves the path to the entity extraction python script.
+#'
+#' @noRd
+
+get_path_entity_script <- function() {
+  system.file("python", "entity.py",
+              package = 'CausalityExtraction')
+}
+
+
 #' Load entity extraction model
 #'
 #' Loads the causality classification model. Wrapped in memoise to avoid
@@ -38,18 +50,26 @@ mem_load_entity_model <- memoise::memoise(load_entity_model)
 #' @noRd
 
 gen_entity_class <- function(hypothesis) {
-
   # For R CMD Checks
   model_entity <- X1 <- X2 <- X3 <- NULL
+  entity_predict <- NULL
+
+  # Convert to Numpy Array
+  hypothesis_np <- np$array(hypothesis)
+  hypothesis_tf <- tf$convert_to_tensor(hypothesis_np)
 
   # Load entity extraction model
   model_entity <- mem_load_entity_model()
 
-  # Convert to Numpy Array
-  hypothesis_np <- np$array(hypothesis)
-
   # Generate predictions
-  pred_classes_array <- model_entity$predict(hypothesis_np)
+  pred_classes_array <- model_entity$predict(hypothesis_tf)
+
+  # reticulate::source_python(get_path_entity_script())
+
+  # pred_classes_array <- entity_predict(
+  #   hypothesis_np)
+  #
+  # print(pred_classes_array)
 
   # Convert predictions to dataframe
   pred_classes_df <- data.frame(

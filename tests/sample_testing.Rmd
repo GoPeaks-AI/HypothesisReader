@@ -60,3 +60,17 @@ df_3 <- CausalityExtraction(
 df_3 %>% glimpse()
 ```
 
+```{r}
+file_path <- c("/tmp/RtmpNFkBjP/ad5c78055376a890447a77d9/0.pdf", 
+       "/tmp/RtmpNFkBjP/ad5c78055376a890447a77d9/1.pdf")
+
+regex_file_name <- "([^/]+$)"
+
+df <- data.frame(file_path)
+df %>%
+  dplyr::mutate(
+    file_name = stringr::str_extract(x, regex_file_name)
+  )
+
+```
+
