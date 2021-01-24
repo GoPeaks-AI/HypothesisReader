@@ -23,6 +23,7 @@ Imports:
     reticulate,
     shiny,
     shinycssloaders,
+    stopwords,
     stringr,
     tidyr,
     tidytext,
