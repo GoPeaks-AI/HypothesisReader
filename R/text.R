@@ -252,13 +252,14 @@ standardize_hypothesis <- Vectorize(
 process_text <- function(input_path){
   dummy_pdfminer_load <- pdf_to_text <- NULL
   # Convert --------------------------------------------------------------------
-  ## Dummy call to force PDFminer to load. Must be called before script or
-  ## the script will fail
-  dummy_pdfminer_load <- pdfminer$converter$TextConverter()
 
-  ## Source pdfconversion script
-  reticulate::source_python(get_path_pdf2text())
-  input_text <- pdf_to_text(input_path)
+  ## Source pdf conversion script
+  # reticulate::source_python(get_path_pdf2text())
+  # input_text <- pdf_to_text(input_path)
+
+  ## Use PDFminer.six high level function
+  input_text <- pdfminer$extract_text(input_path)
+
 
   # Vectorize ------------------------------------------------------------------
   ## Split text into character vector

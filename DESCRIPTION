@@ -34,7 +34,7 @@ Config/reticulate:
       list(package = "joblib",       version = "1.0.0",    pip = TRUE),
       list(package = "nltk",         version = "3.5",      pip = TRUE),
       list(package = "numpy",        version = "1.19.2",   pip = TRUE),
-      list(package = "pdfminer",     version = "20191125", pip = TRUE),
+      list(package = "pdfminer.six", version = "20201018", pip = TRUE),
       list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
       list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
     )

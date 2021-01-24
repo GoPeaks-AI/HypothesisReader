@@ -46,14 +46,6 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   i = 1
   for (pdf in pdf_paths) {
 
-    # Generate final table components
-    ## File Name
-    # file_name <- dplyr::last(
-    #   stringr::str_split(
-    #     string = pdf,
-    #     pattern = "/"
-    #     )[[1]])
-
     file_name <- basename(pdf)
 
     ## Text Pre-processing
