@@ -250,8 +250,13 @@ standardize_hypothesis <- Vectorize(
 #' @param input_path path to PDF file
 
 process_text <- function(input_path){
-  pdf_to_text <- NULL
+  dummy_pdfminer_load <- pdf_to_text <- NULL
   # Convert --------------------------------------------------------------------
+  ## Dummy call to force PDFminer to load. Must be called before script or
+  ## the script will fail
+  dummy_pdfminer_load <- pdfminer$converter$TextConverter()
+
+  ## Source pdfconversion script
   reticulate::source_python(get_path_pdf2text())
   input_text <- pdf_to_text(input_path)
 
