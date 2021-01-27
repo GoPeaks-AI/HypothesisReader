@@ -97,7 +97,9 @@ gen_causality_model_input <- function(hypothesis_df) {
         string      = hypothesis_causality,
         pattern     = cause,
         replacement = "node1"
-      ),
+      )
+    ) %>%
+    dplyr::mutate(
       causal_statement = stringr::str_replace(
         string      = causal_statement,
         pattern     = effect,

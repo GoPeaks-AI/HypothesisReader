@@ -8,6 +8,17 @@ Authors@R:
            email = "canfielder@gmail.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: What the package does (one paragraph).
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "joblib",       version = "1.0.0",    pip = TRUE),
+      list(package = "nltk",         version = "3.5",      pip = TRUE),
+      list(package = "numpy",        version = "1.19.2",   pip = TRUE),
+      list(package = "pdfminer.six", version = "20201018", pip = TRUE),
+      list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
+      list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
+    )
+  )
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -29,14 +40,3 @@ Imports:
     tidytext,
     tokenizers,
     vroom
-Config/reticulate:
-  list(
-    packages = list(
-      list(package = "joblib",       version = "1.0.0",    pip = TRUE),
-      list(package = "nltk",         version = "3.5",      pip = TRUE),
-      list(package = "numpy",                              pip = TRUE),
-      list(package = "pdfminer.six", version = "20201018", pip = TRUE),
-      list(package = "scikit-learn", version = "0.23.2",   pip = TRUE),
-      list(package = "tensorflow",   version = "2.4.0",    pip = TRUE)
-    )
-  )

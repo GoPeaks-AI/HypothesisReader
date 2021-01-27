@@ -52,14 +52,18 @@ gen_causality_extraction_table <- function(file_properties) {
   output_table <- CausalityExtraction(file_path = file_paths)
 
   # Replace temporary file names with uploaded file names
-  output_table <- output_table %>%
-    dplyr::left_join(
-      y  = lookup_table,
-      by = c("file_name" = "file_name_temp")
-    ) %>%
-    dplyr::select(-file_name) %>%                  # Drop temporary file name
-    dplyr::rename(file_name = file_name_pdf) %>%   # Rename actual file name col
-    dplyr::select(file_name, dplyr::everything())
+  # Only do this if the table is not empty
+
+  if (!(purrr::is_empty(output_table))) {
+    output_table <- output_table %>%
+      dplyr::left_join(
+        y  = lookup_table,
+        by = c("file_name" = "file_name_temp")
+      ) %>%
+      dplyr::select(-file_name) %>%                  # Drop temporary file name
+      dplyr::rename(file_name = file_name_pdf) %>%   # Rename actual file name col
+      dplyr::select(file_name, dplyr::everything())
+  }
 
   output_table
 }

@@ -1,3 +1,8 @@
+# Constants --------------------------------------------------------------------
+missing_entity_tag <- ""
+
+# Functions --------------------------------------------------------------------
+
 #' Retrieve path to entity extraction model
 #'
 #' Retrieves the path to the entity extraction model. This prevents a
@@ -269,7 +274,7 @@ index_to_entity <- function(hypothesis, entity_index_input) {
 
     # Skip process if index vector is empty
     if (purrr::is_empty(index)){
-      entity_text_output[[i]] <- "<Entity Not Detected>"
+      entity_text_output[[i]] <- missing_entity_tag
       next
     }
 
@@ -375,15 +380,19 @@ entity_extraction <- function(hypothesis_df){
       effect = V2
     )
 
-  # Replace missing entity tag
-  missing_entity_tag <- "<Entity Not Detected>"
-
+  # Replace missing entity
   entity_text_output_df <- entity_text_output_df %>%
-    dplyr::mutate(
-      cause  = dplyr::na_if(cause, missing_entity_tag),
-      effect = dplyr::na_if(effect, missing_entity_tag)
-    ) %>%
-    dplyr::mutate(
+    # dplyr::mutate(                                    # NA is missing
+    #   cause  = dplyr::na_if(
+    #     cause,
+    #     missing_entity_tag
+    #     ),
+    #   effect = dplyr::na_if(
+    #     effect,
+    #     missing_entity_tag
+    #     )
+    # ) %>%
+    dplyr::mutate(                                   # remove periods
       effect = stringr::str_remove_all(
         string  = effect,
         pattern = "\\."

@@ -7,11 +7,26 @@
 
 
 # OPTIONS
-options(shiny.maxRequestSize = 100*1024^2)
+options(shiny.maxRequestSize = 10000*1024^2)
 
 # UI ---------------------------------------------------------------------------
 ui <- shiny::fluidPage(
-
+  shiny::tags$head(
+    shiny::tags$style(
+    shiny::HTML("#shiny-notification-panel {
+            top: calc(25%);
+            bottom: unset;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            width: calc(25%);
+            font-size: 2vw;
+             }
+             "
+    )
+    )
+  ),
   shiny::titlePanel("Causal Knowledge Extraction"),
   # SIDEBAR
   shiny::sidebarLayout(
@@ -55,7 +70,22 @@ server <- function(input, output) {
 
     # Execute package
     output_table <- gen_causality_extraction_table(input$file)
-    output_table
+
+    # Verify that hypothesis was detected
+    if (!(purrr::is_empty(output_table))) {
+
+      output_table
+
+    } else {
+
+      shiny::showNotification(
+        ui = "No Hypotheses Detected",
+        duration = 30,
+        type = "message"
+        )
+      NULL
+
+    }
   })
 
 

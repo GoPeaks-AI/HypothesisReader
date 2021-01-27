@@ -114,7 +114,12 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
         lst_output[[i]] <- iter_df
         i <- i + 1
       }
+    } else {
+      no_hypothesis<- paste("File ",file_name ,": Hypothesis not detected.")
+      message(no_hypothesis)
+      next
     }
+
     pdf_complete_message <- paste("File ", file_name,": Complete")
     message(pdf_complete_message)
   }
