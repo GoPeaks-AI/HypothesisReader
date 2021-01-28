@@ -39,7 +39,7 @@ gen_file_name_lookup <- function(file_properties) {
 #'
 #' @noRd
 
-gen_causality_extraction_table <- function(file_properties) {
+gen_causality_extraction_output <- function(file_properties) {
   file_name <- file_name_pdf <- NULL
 
   # Create look-up table
@@ -65,5 +65,11 @@ gen_causality_extraction_table <- function(file_properties) {
       dplyr::select(file_name, dplyr::everything())
   }
 
-  output_table
+
+  # Save look-up and output table to list
+  output_list <- vector(mode = "list", length = 2)
+  output_list[[1]] = lookup_table
+  output_list[[2]] = output_table
+
+  output_list
 }

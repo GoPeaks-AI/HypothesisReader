@@ -39,4 +39,5 @@ Imports:
     tidyr,
     tidytext,
     tokenizers,
-    vroom
+    vroom,
+    shinyjs
