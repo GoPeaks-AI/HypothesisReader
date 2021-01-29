@@ -13,9 +13,6 @@ gen_file_name_lookup <- function(file_properties) {
   file_names_pdf  <- basename(file_properties$name)
   file_names_temp <- basename(file_properties$datapath)
 
-  # Name file objects
-  # names(file_names_pdf)  <- "file_name_pdf"
-  # names(file_names_temp) <- "file_name_temp"
 
   # Combine temporary and actual file names into look-up table
   output.df <- dplyr::bind_cols(

@@ -6,7 +6,8 @@
 #' @noRd
 
 # Constants
-
+h_warning <- paste("Hypotheses were not extracted from the",
+                   "following uploaded documents:")
 
 # OPTIONS
 options(shiny.maxRequestSize = 10000*1024^2)
@@ -15,7 +16,7 @@ options(shiny.maxRequestSize = 10000*1024^2)
 ui <- shiny::fluidPage(
   shiny::tags$head(
     shiny::tags$style(
-    shiny::HTML("#shiny-notification-panel {
+      shiny::HTML("#shiny-notification-panel {
             top: calc(25%);
             bottom: unset;
             left: 0;
@@ -26,13 +27,13 @@ ui <- shiny::fluidPage(
             font-size: 2vw;
              }
              "
-    ),
-    shiny::HTML("#no_hypothesis_html{
+      ),
+      shiny::HTML("#no_hypothesis_html{
            font-size: 16px;
            font-weight: bold;
            font-style: italic;
            }"
-    )
+      )
     )
   ),
   shinyjs::useShinyjs(),
@@ -48,17 +49,17 @@ ui <- shiny::fluidPage(
           multiple = TRUE,
           accept   = c(".pdf"),
           width    = '90%'
-          )
-        ),
-      shinyjs::hidden(
-        shiny::wellPanel(
-        id="panel_no_hypothesis",
-        shiny::titlePanel("Note"),
-        shiny::h4(),
-        shiny::htmlOutput(outputId = "no_hypothesis_html")
-        )
         )
       ),
+      shinyjs::hidden(
+        shiny::wellPanel(
+          id="panel_no_hypothesis",
+          shiny::titlePanel("Note"),
+          shiny::h3(h_warning),
+          shiny::htmlOutput(outputId = "no_hypothesis_html")
+        )
+      )
+    ),
     ### MAIN
     shiny::column(
       width = 8,
@@ -66,12 +67,12 @@ ui <- shiny::fluidPage(
         ui_element = DT::DTOutput("causality_extraction_table"),
         type       = 1,
         size       = 3
-        ),
+      ),
       shiny::downloadButton(
         outputId = "download_table",
         label    = "Download")
-      )
     )
+  )
 )
 
 
@@ -112,7 +113,7 @@ server <- function(input, output) {
     lookup_table <- output_list[[1]]
     output_table <- output_list[[2]]
 
-        # Define document sets
+    # Define document sets
     all_documents <- lookup_table %>%
       dplyr::pull(file_name_pdf)
 
@@ -148,7 +149,6 @@ server <- function(input, output) {
 
   # Hide/Show no hypothesis detected
   shiny::observe({
-
     if(!(purrr::is_empty(docs_wo_hypothesis()))) {
       shinyjs::toggle(id="panel_no_hypothesis")
     }
@@ -162,6 +162,7 @@ server <- function(input, output) {
     output_table
   })
 
+  # Display documents without hypotheses
   output$no_hypothesis_html<- shiny::renderUI({
     input.v <- docs_wo_hypothesis()
     outpout.str <- paste0(input.v , collapse = "<br/>")
@@ -177,7 +178,7 @@ server <- function(input, output) {
         Sys.Date(),
         ".csv",
         sep = ""
-        )
+      )
     },
     content = function(file) {
 
@@ -204,5 +205,5 @@ launch_app <- function() {
   # Run the application
 
   shiny::runApp(list(ui = ui, server = server),
-                   launch.browser = TRUE)
+                launch.browser = TRUE)
 }
