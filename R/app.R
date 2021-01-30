@@ -25,14 +25,17 @@ ui <- shiny::fluidPage(
             margin-right: auto;
             width: calc(20%);
             font-size: 2vw;
-             }
-             "
+             }"
       ),
-      shiny::HTML("#no_hypothesis_html{
-           font-size: 16px;
-           font-weight: bold;
+      shiny::HTML("#no_hypothesis_html_list{
+           font-size: 14px;
            font-style: italic;
            }"
+      ),
+      shiny::HTML("ul {
+      padding-left: 1.1em;
+      list-style-type: square;
+      }"
       )
     )
   ),
@@ -55,8 +58,8 @@ ui <- shiny::fluidPage(
         shiny::wellPanel(
           id="panel_no_hypothesis",
           shiny::titlePanel("Note"),
-          shiny::h3(h_warning),
-          shiny::htmlOutput(outputId = "no_hypothesis_html")
+          shiny::h5(h_warning),
+          shiny::htmlOutput(outputId = "no_hypothesis_html_list")
         )
       )
     ),
@@ -163,10 +166,20 @@ server <- function(input, output) {
   })
 
   # Display documents without hypotheses
-  output$no_hypothesis_html<- shiny::renderUI({
+  output$no_hypothesis_html_list<- shiny::renderUI({
     input.v <- docs_wo_hypothesis()
-    outpout.str <- paste0(input.v , collapse = "<br/>")
-    shiny::HTML(outpout.str)
+
+    # Generate HMTL list format
+    output_html <- knitr::combine_words(
+      words = input.v,
+      before = '<li>',
+      after = "</li>",
+      and = " ",
+      sep = " ")
+
+    output_html <- paste("<ul>", output_html, "</ul>", sep = " ")
+
+    shiny::HTML(output_html)
   })
 
 

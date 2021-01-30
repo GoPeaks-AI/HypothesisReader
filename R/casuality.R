@@ -267,10 +267,10 @@ remove_causality_pred <- function(CausalityExtractionTable) {
   CausalityExtractionTable %>%
     dplyr::mutate(
       causal_relationship = dplyr::if_else(
-        condition = (purrr::is_empty(cause) || purrr::is_empty(effect)),
-        true      = 1,
-        false     = 0
-        )
+        condition = ((cause == "") | (effect == "")),
+        true      = "",
+        false     = as.character(causal_relationship)
+      )
     )
 
 }

@@ -58,7 +58,7 @@ gen_causality_extraction_output <- function(file_properties) {
         by = c("file_name" = "file_name_temp")
       ) %>%
       dplyr::select(-file_name) %>%                  # Drop temporary file name
-      dplyr::rename(file_name = file_name_pdf) %>%   # Rename actual file name col
+      dplyr::rename(file_name = file_name_pdf) %>%   # Rename file name col
       dplyr::select(file_name, dplyr::everything())
   }
 
