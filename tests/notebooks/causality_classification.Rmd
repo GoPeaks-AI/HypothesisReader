@@ -1,0 +1,297 @@
+---
+title: "Modeling"
+author: "Evan Canfield"
+date: "11/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+The purpose of this notebook is to recreate the python script *Causality_Classification.py* as a R notebook. Once our results are replicated, the Bag-of-Words Logistic Regression and Support Vector Machines models will be saved for future use in the final R Package/Tool.
+
+Several steps in the python script *Causality_Classification.py*, and earlier PDF processing, are executed with R packages available in CRAN. These packages contain similar functions to the Python packages used in the original process, but they may not be exactly equivalent. Successfully recreating the results of *Causality_Classification.py* will help in verifying the R work flow sufficiently recreates the Python workflow.
+
+### A Note on Modifications:
+
+**Errors**
+
+This notebook uses the file *training_data.xlsx* as input. This file was partially manually generated to list of all identified hypotheses sentences in the training set of academic papers. This input also identifies key attributes of each extracted hypothesis. 
+
+**Hypothesis Statement 26** of file **dd96amj.txt** was generating an error when running the python script. The error was caused by a **period** punctuation in the Node 1 entity associated with this hypothesis. During entity extraction, the period was causing the code to not identify a Node 1 entity within hypothesis, and therefore not replace this entity with the term **Node 1**.
+
+Prior to loading the data into this notebook, this period was manually removed from the copy of this input. 
+
+
+**Scikit Learn Models**
+In order to have consistent results, a random seed was set and added to each applicable step.
+
+All other modifications to the *Causality_Classification.py* script were purely formatting driven and have no effect on the execution of the code.
+
+
+# Import
+## Libraries
+Direct Library import has been moved to the script R/install.R in order to maintain consistent library management across multiple project actions.
+```{r import_libraries}
+# Import All Scripts
+script_path <- "../R/"
+file_paths <- list.files(path = script_path, pattern = ".R", full.names = TRUE)
+
+# Execute All Scripts
+for (file in file_paths){
+  source(file)
+}
+
+# Load Libraries
+project_install_packages()
+```
+
+## Set Seed and Random States
+```{r set_seed}
+rs <- as.integer(5590)
+set.seed(rs)
+```
+
+## Python Modules
+### Define Python Binary
+We first need to point to the python binary we are using. I have had difficultly in the best method to do this. One possible way is to define a Variable Path in the .RProfile for this project. This method has been inconsistent in it's success. Currently, using the **use_python** function from the **Reticulate** package has been successful.
+```{r assign_python}
+use_python(python = "./../.causalityextractionnlp/bin/python")
+```
+
+### Import Python Moducles
+```{r import_python_modules}
+# General
+## Numpy
+np <- import("numpy")
+
+joblib <- import("joblib")
+
+# Modeling
+## Sci-Kit Learn Model Selection
+skl_ms <- import("sklearn.model_selection")
+
+## Sci-Kit Learn Linear Models
+skl_lm <- import("sklearn.linear_model")
+
+## Sci-Kit Learn Support Vector Machines 
+skl_svm <- import("sklearn.svm")
+
+## Sci-Kit Learn Naive Bayes 
+skl_nb <- import("sklearn.naive_bayes")
+
+# NLP
+## Gensim
+gensim <- import("gensim")
+```
+
+## Data
+```{r import_data}
+train_raw <- read_excel(path = "../data/training_data_node_punct_removed.xlsx", sheet = "training_data")
+```
+
+# Pre-Process
+Pre-process data before creating Document Term Matrix.
+```{r pre-processing}
+train_processed <- process_data(train_raw)
+```
+
+### Python Process
+The following is the output for the preprocessing from the Python process. The R and Python preprocessing steps generate slightly different results. We'll use the Python dataset to verify downstream steps are returning equivalent results.
+```{r import_python_processed_data}
+train_raw_py <- read.csv("../data/processed_python.csv")
+train_processed_py <- train_raw_py %>% 
+  mutate(
+    sentence = str_remove_all(sentence, "'"),
+    sentence = str_remove_all(sentence, ","),
+    sentence = str_remove_all(sentence, "\\[|\\]")
+    )
+```
+
+## Assign Training Dataset
+```{r assign_train_data}
+train <- train_processed
+# train <- train_processed_py
+```
+
+# Vectorization
+The following steps generates the data features through different emthods of vectorization:
+
+* Bag-of-Words
+* Doc2Vec
+
+## Bag-of-Words
+```{r gen_bow}
+input_bow <- transformation_bag_of_words(train)
+
+# Inspect
+input_bow %>% head()
+```
+
+## Doc2Vec
+```{r gen_doc2vec}
+input_doc2vec <- transformation_doc2vec(input_data = train)
+```
+
+# Modeling
+## Initialize Models
+We will be evaluating the same model types for two different methods of vectorization, Bag-of-Words and Doc2Vec. Before we get to fitting these models to these datasets, we will initialize.
+```{r initialize_models}
+# Logistic Regression
+lgreg <- skl_lm$LogisticRegression
+lgreg_m <- lgreg(C = 1e5, random_state = rs)
+
+# Naive Bayes
+nb_m <- skl_nb$MultinomialNB()
+
+# SVM
+svc <- skl_svm$SVC
+svc_m <- svc(kernel = 'linear', 
+             random_state = rs)
+```
+
+## Doc2Vec
+### Train / Test Split
+First, we split the data our target and feature sets. As we will be using Python modules for processing this data, we also need to convert our R dataframes to Python objects.
+```{r doc2vec_train_test_split}
+split_data <- split_train_test(input_doc2vec)
+split_data <- train_test_to_python(split_data)
+
+X_tr <- split_data$train_features
+X_te <- split_data$test_features
+y_tr <- split_data$train_target
+y_te <- split_data$test_target
+```
+
+### Logistic Regression
+```{r doc2vec_logreg}
+# Assign Model
+model <- lgreg_m
+
+# Train 
+model <- model$fit(X = X_tr, y = y_tr)
+
+# Predict
+y_pred <- model$predict(X_te)
+
+# Convert to Factors for Caret Package
+y_pred <- as.factor(y_pred)
+y_te <- as.factor(y_te)
+
+confusionMatrix(data = y_pred, 
+                reference = y_te, 
+                mode = "prec_recall")
+```
+
+### Support Vector Machines
+```{r doc2vec_svm}
+# Assign Model
+model <- svc_m
+svc_m
+
+# Train 
+model <- model$fit(X = X_tr, y = y_tr)
+
+# Predict
+y_pred <- model$predict(X_te)
+
+# Convert to Factors for Caret Package
+y_pred <- as.factor(y_pred)
+y_te <- as.factor(y_te)
+
+confusionMatrix(data = y_pred, 
+                reference = y_te, 
+                mode = "prec_recall")
+```
+
+## Bag-of-Words
+### Train / Test Split
+First, we split the data our target and feature sets. As we will be using Python modules for processing this data, we also need to convert our R dataframes to Python objects.
+```{r bow_train_test_split}
+split_data <- split_train_test(input_bow)
+split_data <- train_test_to_python(split_data)
+
+X_tr <- split_data$train_features
+X_te <- split_data$test_features
+y_tr <- split_data$train_target
+y_te <- split_data$test_target
+```
+
+### Logistic Regression
+```{r bow_logreg}
+# Assign Model
+model <- lgreg_m
+
+# Train 
+model <- model$fit(X = X_tr, y = y_tr)
+
+# Predict
+y_pred <- model$predict(X_te)
+
+# Convert to Factors for Caret Package
+y_pred <- as.factor(y_pred)
+y_te <- as.factor(y_te)
+
+confusionMatrix(data = y_pred, 
+                reference = y_te, 
+                mode = "prec_recall")
+
+lgreg_bow_m <- model 
+```
+
+### Support Vector Machines
+```{r bow_svm}
+# Assign Model
+model <- svc_m
+
+# Train 
+model <- model$fit(X = X_tr, y = y_tr)
+
+# Predict
+y_pred <- model$predict(X_te)
+
+# Convert to Factors for Caret Package
+y_pred <- as.factor(y_pred)
+y_te <- as.factor(y_te)
+
+confusionMatrix(data = y_pred, 
+                reference = y_te, 
+                mode = "prec_recall")
+
+svc_bow_m <- model 
+```
+
+### Naive Bayes
+```{r bow_nb}
+# Assign Model
+model <- nb_m
+
+# Train 
+model <- model$fit(X = X_tr, y = y_tr)
+
+# Predict
+y_pred <- model$predict(X_te)
+
+# Convert to Factors for Caret Package
+y_pred <- as.factor(y_pred)
+y_te <- as.factor(y_te)
+
+confusionMatrix(data = y_pred, 
+                reference = y_te, 
+                mode = "prec_recall")
+
+nb_bow_m <- model
+```
+
+# Export Models
+```{r}
+# Bag-of-Words - Logistic Regression
+joblib$dump(lgreg_bow_m, "./../data/output_models/log_reg_bow.pkl")
+
+# Bag-of-Words - Support Vector Machines
+joblib$dump(svc_bow_m, "./../data/output_models/svm_bow.pkl")
+```
+

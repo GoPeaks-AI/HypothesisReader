@@ -1,0 +1,257 @@
+---
+title: "Entity Extraction Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output:
+  html_document:
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement the Entity Extraction model to convert hypotheses into entities.
+
+# Import
+## Libraries
+```{r import_libraries, message=FALSE}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr,
+    # purrr,
+    quanteda,
+    stringr,
+    tidyr,
+    tidytext
+  )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r load_source_files, warning=FALSE, message=FALSE}
+# Import All Scripts
+script_path <- "../R/"
+file_paths <- list.files(recursive = TRUE, 
+                         path = script_path, pattern = ".R", 
+                         full.names = TRUE)
+
+for (file in file_paths){
+  source(file)
+}
+```
+
+## Data
+```{r import_data}
+# PDF Input
+## Define Path
+folder_path <- "./../data/sample_papers/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+```
+
+## Python Modules
+```{r}
+np <- import("numpy")
+joblib <- import("joblib")
+nltk_stem <- import("nltk.stem")
+```
+
+## Causality Classification Model
+```{r}
+path_model <- "./../models/causality_bow_pipeline_naive_bayes.pkl"
+model_causality <- joblib$load(path_model)
+```
+# Pre-process Steps
+Before Causality Classification occurs, the following steps happen:
+
+* Text Pre-processing
+* Hypothesis Classification
+* Entity Extraction
+
+```{r}
+# Text Pre-processing
+pdf_path <- pdf_paths[1]
+pdf_path
+text_processed <- process_text(pdf_path)
+
+# Hypothesis Classification
+hypothesis_df <- hypothesis_extraction(text_processed, fasttext_tag = FALSE)
+
+hypothesis_causality <- hypothesis_df %>% select(hypothesis_causality)
+
+# Entity Extraction
+entities <- entity_extraction(hypothesis_df)
+
+entities
+hypothesis_causality
+```
+
+# Processing
+
+## remove punctuation
+
+```{r}
+pattern_punct <- "[[:punct:]]"
+
+causality_01 <- hypothesis_causality %>%
+  dplyr::bind_cols(entities) %>%
+  dplyr::mutate(
+    row_id= dplyr::row_number()
+  ) %>%
+  dplyr::select(row_id, dplyr::everything()) %>%
+  # tidyr::drop_na()  %>%
+  dplyr::mutate(
+    hypothesis_causality = stringr::str_remove_all(
+      string  = hypothesis_causality,
+      pattern = pattern_punct
+    ),
+    cause = stringr::str_remove_all(
+      string  = cause,
+      pattern = pattern_punct
+    ),
+    effect = stringr::str_remove_all(
+      string  = effect,
+      pattern = pattern_punct
+    )
+  ) 
+causality_01
+```
+
+## Replace NA with text tag
+Purely to silence warning.
+
+```{r}
+causality_01 %>% 
+  replace_na(list(cause = "unknown",
+                  effect = "unknown"))
+```
+
+##replace node_1 / node_2
+```{r}
+causality_02 <- causality_01 %>%   
+    mutate(
+      causal_statement = dplyr::if_else(
+        condition = (!(is.na(cause))),
+        true = {
+        stringr::str_replace(
+          string      = hypothesis_causality,
+          pattern     = cause,
+          replacement = "node1"
+        )
+        }, false = hypothesis_causality
+        )
+        ) %>% 
+    mutate(
+      causal_statement = dplyr::if_else(
+        condition = (!(is.na(effect))),
+        true = {
+        stringr::str_replace(
+          string      = causal_statement,
+          pattern     = effect,
+          replacement = "node2"
+        )
+        }, false = causal_statement
+        )
+        )
+  
+causality_02
+```
+
+
+## Remove Stopwords
+```{r}
+
+causality_03 <- causality_02 %>% 
+  unnest_tokens(word, causal_statement) %>% 
+  anti_join(get_stopwords(), by = "word") %>% 
+  select(row_id, word)
+
+causality_03
+```
+
+## Lemmanize
+
+```{r}
+lemmatizer <- nltk_stem$WordNetLemmatizer()
+
+lemm.scalar <- function(x) {
+  lemmatizer$lemmatize(x)
+}
+
+lemm.v <- Vectorize(lemm.scalar)
+```
+
+
+```{r}
+
+
+# causality_03
+
+tokens <- causality_03 %>% pull(word)
+
+unname(lemm.v(tokens))
+ 
+tokens_lemm = vector(
+  mode = "character", 
+  length = length(tokens)
+  )
+
+for (i in seq_along(tokens)) {
+  token = tokens[i]
+  token_lemm <- lemmatizer$lemmatize(token)
+  tokens_lemm[i] = token_lemm
+}
+
+tokens_lemm
+
+tokens_lemm_df <- data.frame(tokens_lemm)
+
+causality_04 <- causality_03 %>% 
+  bind_cols(tokens_lemm_df) %>% 
+  group_by(row_id) %>% 
+  mutate(sentence = str_c(tokens_lemm, collapse = " ")) %>%
+  select(-word, -tokens_lemm) %>% 
+  distinct() %>% 
+  pull(sentence)
+
+causality_04
+
+```
+
+# Model
+## Dummy Data
+```{r}
+input <- c()
+a <- "hypo node1 has a positive relationship on node2"
+b <- "node1 behaves positively to node2"
+c <- "node1 relationship on node2"
+d <- "hypo node1 node2"
+e <- "hypo 1 node1 likely use node2"
+f <- "hypo 1 predicted increased use node1 would result increased node2 decreasedvoluntaryemployeeturnover"
+g <- "hypo 3 positive effect node1 node2"
+h <- "hypo 3 positive effect node1 node2"
+input <- c(input, a, b, c, d, e, f, g, h)
+
+model_causality$predict_proba(input)
+```
+
+## Actual Data
+```{r}
+causality_04 <- np_array(causality_03)
+
+causality_pred <- model_causality$predict(causality_04)
+
+causality <- data.frame(causality_pred) %>% rename(causality = causality_pred)
+
+causality
+```
+
+# Function Test
+```{r}
+causality_output <- causality_classification(hypothesis)
+```
+

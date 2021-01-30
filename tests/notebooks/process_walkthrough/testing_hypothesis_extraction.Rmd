@@ -1,0 +1,304 @@
+---
+title: "Entity Extraction Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement the Entity Extraction model 
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr,
+    readxl,
+    reticulate,
+    stringr,
+    tokenizers,
+    tidyr
+  )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r}
+# Import All Scripts
+script_path <- "../R/"
+file_paths <- list.files(recursive = TRUE, 
+                         path = script_path, pattern = ".R", 
+                         full.names = TRUE)
+
+for (file in file_paths){
+  source(file)
+}
+
+file_paths
+```
+## fastText Model
+```{r}
+## Load Model
+path_ft_model <- "./../models/fasttext_model.bin"
+ft_model <- fastTextR::ft_load(path_ft_model)
+```
+
+## Data
+```{r import_data}
+# PDF Input
+folder_path <- "./../data/sample_papers/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+pdf_path <-pdf_paths[3]
+print(pdf_path)
+
+# Error Word Splits
+df_word_split_error <- read.csv(file ="./../data/processing_next_line_split_error.csv", 
+                                stringsAsFactors = FALSE)
+word_split_error <- df_word_split_error %>% select(word) %>% pull
+```
+
+# Process Data
+## Preprocess Text Steps
+```{r}
+# Process Text
+text_processed <- process_text(pdf_path)
+
+input_text <- text_processed
+```
+
+## Processing - Hypothesis Exrtaction
+```{r}
+  # Concatenate All Vector Elements, Separated By Line Split
+  processing_text <- str_c(input_text, collapse = " ")
+  processing_text <- tokenize_sentences(processing_text,
+                                        strip_punct = FALSE) %>% unlist()
+
+  # Replace Double Spaces
+  processing_text <- str_replace_all(string = processing_text,
+                            pattern = "  ",
+                            replacement = " ")
+
+  # Normalize Text ------------------------------------------------------------
+  processing_text <- tolower(processing_text)
+```
+
+```{r}
+# Regex - Between Hypo and Colon
+regex_hypo_marker <- "<split>hypo (.*?):"
+
+# Hypothesis Extraction -----------------------------------------------------
+  # Identify Lines with Hypothesis Pattern
+  h_match <- processing_text %>% str_match(regex_hypo_marker)
+  # Extract Hypotheses Number
+  h_match_num <- h_match[,2]
+  
+  # Identify Unique Hypothesis Numbers
+  h_match_num_unq <- unique(h_match_num)
+  
+  # Drop NA
+  h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
+  
+  # Determine Vector Index of Initial Hypothesis Statements
+  h_initial <- c()
+  for (i in h_match_num_unq){
+    intial_idx <- tapply(seq_along(h_match_num),
+                         h_match_num,
+                         min)[i]
+    h_initial <- c(h_initial, intial_idx)
+  }
+  
+  # Reduce Text to Only Initial Hypothesis Instances
+  h_statements <- processing_text[h_initial]
+  h_statements
+
+```
+
+```{r}
+  # Split Statements On Indicator (Defined in Processing) ---------------------
+  ## Define
+  split_indicator <- "<split>"
+
+  ## Split on Indicator
+  h_statements <- str_split(string = h_statements,
+                                     pattern = split_indicator) %>%
+    unlist()
+
+  ## Detect Statements Which Contain "Hypo"
+  logical_hypothesis_2 <- str_detect(h_statements, "hypo")
+
+  ## Drop Statements that Do Not Include "Hypo"
+  h_statements <- h_statements[logical_hypothesis_2]
+  
+  h_statements
+
+```
+
+```{r}
+h_statements
+
+detect_string <- ".*: "
+
+h_statements %>% 
+  str_extract("hypo (.*?):") %>% 
+  str_remove_all("hypo ") %>% 
+  str_remove_all(":") %>% 
+  as.integer()
+
+
+
+h_number <- h_statements %>% 
+  str_extract(detect_string) %>% 
+  str_remove_all("hypo ") %>% 
+  str_remove_all(": ") %>% 
+  as.integer()
+
+h_number
+
+output <- vector(mode = "logical", length = length(h_number))
+tracker <- vector(mode = "integer", length = length(h_number))
+
+for (i in seq_along(h_number)) {
+  num <- h_number[i]
+
+  if (is.na(num)){
+    
+    output[i] = FALSE
+    tracker[i] <- -1
+    
+  } else if (num %in% tracker) {
+    
+    output[i] = FALSE
+    tracker[i] <- -1
+    
+  } else {
+    
+    output[i] = TRUE
+    tracker[i] <- num
+
+  }
+}
+
+h_statements <- h_statements[output]
+```
+
+```{r}
+# 
+#   for (i in seq_along(word_split_error)) {
+#     word_split <- word_split_error[i]
+#     word_fix <- str_replace_all(string = word_split, 
+#                                   pattern = " ",
+#                                   replacement = "")
+#     
+#     h_statements <- h_statements %>% 
+#       str_replace_all(pattern = word_split, replacement = word_fix)
+#   }
+# 
+# h_statements
+```
+
+
+
+```{r}
+
+  # Maintain Data 
+  hypothesis_causality <- h_statements
+
+  # Drop ~Hypo #:~
+  hypothesis_entity <- gsub(".*: ","",h_statements)
+  hypothesis_entity
+```
+
+```{r}
+
+hypothesis_pred <- fastTextR::ft_predict(
+    model   = ft_model,
+    newdata = hypothesis_entity,
+    rval    = "dense"
+  ) %>%
+    as.data.frame()
+
+  ## Assign prediction column names
+  col_names <- names(hypothesis_pred)
+
+  col_names[1]
+  
+  ## Drop statements which were predicted as non-hypothesis class
+  if (!("__label__0" %in% col_names)) {
+    response <- vector(
+      mode   = "logical",
+      length = length(hypothesis_entity)
+    )
+
+    for (i in seq_along(hypothesis_entity)){
+      response[i] <- TRUE
+
+    }
+
+  } else if (!("__label__1" %in% col_names)) {
+    response <- vector(
+      mode   = "logical",
+      length = length(hypothesis_entity))
+
+    for (i in seq_along(hypothesis_entity)){
+      response[i] <- FALSE
+
+    }
+  } else {
+    response <- hypothesis_pred %>%
+      dplyr::mutate(
+        Response = dplyr::if_else(
+          condition = col_names[1] <= col_names[2],
+          true      =  TRUE,
+          false     = FALSE
+        )
+      ) %>%
+      dplyr::pull(Response)
+
+  }
+hypothesis_entity <- hypothesis_entity[response]
+hypothesis_entity
+```
+```{r}
+hypothesis_pred 
+```
+
+
+```{r}
+fasttext_tag = FALSE
+# fasttext_tag = TRUE
+
+if (fasttext_tag) {
+  output_hypothesis <- apply_fasttext(hypothesis_entity, hypothesis_causality)
+  
+  hypothesis_causality = output_hypothesis[[1]]
+  hypothesis_entity = output_hypothesis[[2]]
+}
+
+hypothesis_entity
+hypothesis_causality
+```
+
+
+```{r}
+# Convert Text
+hypothesis_entity <- str_to_sentence(hypothesis_entity, locale = "en")
+hypothesis_entity
+```
+
+
+```{r}
+  # Create Dataframe with Hypothesis Number and Hypothesis
+df_hypothesis <- data.frame(hypothesis_entity,
+                            hypothesis_causality, 
+                            stringsAsFactors = FALSE)
+
+df_hypothesis
+```

@@ -1,0 +1,162 @@
+---
+title: "Entity Extraction Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement the Entity Extraction model 
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    CausalityExtraction,
+    dplyr,
+    readxl,
+    reticulate,
+    stringr,
+    tokenizers,
+    tidyr
+  )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r}
+# Import All Scripts
+script_path <- "./../R/*.R"
+file_paths <- list.files(recursive = TRUE, 
+                         path = script_path, pattern = ".R", 
+                         full.names = TRUE)
+
+for (file in file_paths){
+  source(file)
+}
+file_paths
+
+"./../"
+```
+
+## Python Modules
+
+## Data
+```{r import_data}
+# PDF Input
+## Define Path
+pdf_path <- "./../data/acadmic_papers_pdf_sample/jv04amj.pdf"
+
+## Import and Convert to Text
+pdf_tika_package <- parser$from_file(pdf_path)
+
+pdf_txt_raw <- pdf_tika_package$content
+```
+
+# Process Data
+## Process Text and Extract Hypotheses
+```{r}
+# Process Text
+text_processed <- process_text(input_text = pdf_txt_raw)
+
+input_text <- text_processed
+```
+
+```{r}
+  # Concatenate All Vector Elements, Separated By Line Split
+  processing_text <- str_c(input_text, collapse = " ")
+  processing_text <- tokenize_sentences(processing_text,
+                                        strip_punct = FALSE) %>% unlist()
+
+  # Replace Double Spaces
+  processing_text <- str_replace_all(string = processing_text,
+                            pattern = "  ",
+                            replacement = " ")
+
+  # Normalize Text ------------------------------------------------------------
+  processing_text <- tolower(processing_text)
+```
+
+
+## Split Lines w/ Multiple Hypotheses
+```{r}
+processing_text[100]
+
+# Split Statements On Indicator (Defined in Processing) ---------------------
+# Define
+split_indicator <- "<split>"
+processing_text_split <- c()
+  for (line in processing_text) {
+    split_line <-str_split(line, pattern = split_indicator)
+    for (line in split_line[[1]]){
+      processing_text_split <- c(processing_text_split, line)
+    }
+  }
+
+processing_text_split[104:106]
+```
+
+## Remove Hypo
+
+```{r}
+detect_string <- ".*: "
+
+processing_text_split_h_rem <- processing_text_split %>% 
+  str_remove_all("hypo (.*?):") %>% 
+  str_trim(side = "left")
+```
+
+```{r}
+processing_text_split[46]
+```
+
+```{r}
+pred_hypo <- fastTextR::ft_predict(ft_model, newdata = newdata, rval = "dense") %>% 
+      as.data.frame()
+
+pred_hypo
+
+col_names <- names(pred_hypo)
+
+col_names
+
+if ("__label__0" %in% col_names) {
+  pred_hypo <- pred_hypo %>% 
+    mutate(
+        Response = if_else(.[[1]] > .[[2]], FALSE, TRUE)
+    ) %>% pull(Response)
+}
+
+newdata[pred_hypo]
+```
+
+
+## Classify
+```{r}
+## Load Model
+path_ft_model <- "./../models/fasttext_model.bin"
+ft_model <- fastTextR::ft_load(path_ft_model)
+
+newdata <- processing_text_split_h_rem
+
+pred_hypo <- fastTextR::ft_predict(ft_model, newdata = newdata, rval = "dense") %>% 
+      as.data.frame() %>% 
+      mutate(
+        Response = if_else(.[[1]] > .[[2]], 'Label 1', 'Label 0'),
+        index = row_number()
+      ) %>% 
+  rename(label_0 = "__label__0",
+         label_1 = "__label__1") %>% 
+  filter(
+    label_1 > 0.7
+  ) %>% select(index) %>% pull()
+
+for (i in pred_hypo) {
+  print(processing_text_split[i])
+}
+```

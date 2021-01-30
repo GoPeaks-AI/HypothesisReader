@@ -1,0 +1,392 @@
+---
+title: "Reticulate Set-up - Step By Step"
+author: "Evan Canfield"
+date: "12/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+x <- rappdirs::user_data_dir('rtik')
+dir.exists(x)
+```
+
+# Import
+## Libraries
+Direct Library import has been moved to the script R/install.R in order to maintain consistent library management across multiple project actions.
+```{r import_libraries}
+# Import All Scripts
+script_path <- "../R/"
+file_paths <- list.files(recursive = TRUE, path = script_path, pattern = ".R", full.names = TRUE)
+
+# Execute All Scripts
+for (file in file_paths){
+  source(file)
+}
+
+# Load Libraries
+# project_install_packages()/
+```
+
+```{r}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr,
+    fastTextR,
+    lime,
+    purrr,
+    quanteda,
+    rtika,
+    stringr,
+    textstem,
+    tidyr,
+    tidytext,
+    tokenizers
+  )
+  # Lime Package Related
+  p_load(
+    assertthat,
+    glmnet,
+    Matrix,
+    stringi
+  )
+```
+
+
+## Set Seed and Random States
+```{r set_seed}
+rs <- as.integer(5590)
+set.seed(rs)
+```
+
+# Processing
+## Data
+We'll import a random pdf from the available dataset to use as our example input.
+We built our processing steps around the resultant text from the **Tabulizer** package. We'll convert from pdf to text immediately on the import, and then process this raw text.
+
+We also need to upload our patterns reference, which will be used to remove specific custom patterns.
+
+```{r import_data}
+# PDF Input
+## Define Path
+pdf_path <- "./../data/input_pdfs/afglmm10hrm.pdf"
+
+## Import and Convert to Text
+sample <- tika_text(pdf_path)
+
+# Patterns File
+patterns_col <- c("remove","comments")
+patterns_raw <- read_excel(path = "../data/patterns.xlsx", col_names = patterns_col, )
+patterns <- patterns_raw %>% pull(remove)
+```
+
+# Pre-Process Steps
+## Process Data
+With our pdf now converted to text, we'll process this raw text data.
+```{r process_data}
+text_processed <- process_text(input_text = sample, 
+                                  removal_patterns = patterns)
+text_processed[0:5]
+```
+
+## Extract Hypothesis
+```{r extract_hypothesis}
+hypo_xtr <- extract_hypothesis(text_processed)
+hypo_xtr
+hypo_xtr_df <- hypo_xtr %>% select(hypothesis)
+hypo_xtr_vec <- hypo_xtr_df %>% pull()
+```
+# Hypothesis Classification (Paper Section 3.1)
+The following section is the Fasttext model with Lime visuals. We need to load the trained fasttext model, as well as the training data.
+
+## Import 
+### Model
+```{r}
+path_ft_model = "./../data/output_models/fasttext_model.bin"
+
+ft_model <- fastTextR::ft_load(path_ft_model)
+```
+
+### Training/Test Data
+```{r}
+training_data_fasttext_path = "./../data/fasttext/fasttext_dataset_training.txt"
+test_data_fasttext_path = "./../data/fasttext/fasttext_dataset_test.txt"
+training_fasttext <- scan(training_data_fasttext_path, character(),sep = "\n")
+test_fasttext <- scan(training_data_fasttext_path, character(),sep = "\n")
+```
+
+## Predictions
+To verify our model works correctly, let's generate some sample predictions
+```{r}
+res <- fastTextR::ft_predict(ft_model, hypo_xtr_vec, 1)
+
+res_raw <- fastTextR::ft_predict(ft_model, hypo_xtr_vec, 1) %>% 
+  select(label) %>% 
+  rename(Response = label)
+
+res_raw
+
+res_prob <- fastTextR::ft_predict(ft_model, hypo_xtr_vec, ft_model$nlabels) %>% 
+  pivot_wider(names_from = label,  values_from = prob) %>% 
+  select(-id)
+
+res_prob
+
+```
+## Updating Methods
+We need to add prediction with a Fasttext model to the Methods for Lime. To do this, we will need to define a new prediction function.
+
+Before we mess with the current Methods and Classes, lets look at the classes and methods we care about.
+```{r}
+# Fasttext Model
+class(ft_model)
+
+# Lime Predict Function
+methods(lime::predict_model)
+
+# Lime Model Type Function
+methods(lime::model_type)
+```
+
+We now need to define our new function, that will be picked up by the method **predict_model** when the class of the input object in **fasttext**.
+
+```{r}
+ft_predict(explainer$model, newdata = permutations_tokenized, rval = "dense") %>% 
+  as.data.frame()
+```
+
+
+```{r}
+ft_predict(explainer$model, newdata = permutations_tokenized, rval = "dense") %>% 
+  as.data.frame() %>% 
+  mutate(
+    Response = if_else(.[[1]] > .[[2]], '__label__1', '__label__0')
+) %>% 
+  select(Response)
+
+ft_predict(explainer$model, newdata = permutations_tokenized, rval = "dense") %>% 
+  as.data.frame() 
+```
+
+
+```{r}
+predict_model.fasttext <- function(x, newdata, type, ...) {
+  res <- fastTextR::ft_predict(x, newdata = newdata, ...)
+  switch(
+    type,
+    raw = fastTextR::ft_predict(x, newdata = newdata, rval = "dense") %>% 
+      as.data.frame() %>% 
+      mutate(
+        Response = if_else(.[[1]] > .[[2]], '__label__1', '__label__0')
+        ) %>% 
+      select(Response),
+    prob = fastTextR::ft_predict(x, newdata, x$nlabels, rval = "dense") %>% 
+      as.data.frame() 
+  )
+} 
+```
+
+
+Let's test the function directly first
+```{r}
+predict_model.fasttext(x = ft_model, newdata = hypo_xtr_vec, type = "raw")
+
+predict_model.fasttext(x = ft_model, newdata = hypo_xtr_vec, type = "prob")
+```
+
+```{r}
+methods(lime::model_type)
+  
+model_type.fasttext <- function(x, ...) 'classification'
+
+methods(lime::model_type)
+```
+
+## Lime
+With our fasttext model created, we want to use Lime to explain it. First, we define our lime explainer.
+```{r}
+ft_model <-lime::as_classifier(ft_model, labels = c("No hypothesis", "Yes hypothesis"))
+explainer <- lime::lime(
+  training_data_fasttext_path, 
+  ft_model,
+  bow = FALSE)
+
+explainer
+
+```
+
+Let's verify our predict_model function can use our explainer.
+```{r}
+new_data = "environmental instability will be positively associated with strategic change"
+new_data
+predict_model(x = explainer$model, newdata = new_data, type = "prob")
+```
+
+
+```{r}
+new_data = hypo_xtr_vec
+explanation <- lime::explain(x = new_data, explainer = explainer, n_labels = 1, n_features = 20)
+plot_explanations(explanation)
+```  
+# Debug
+Error comes from line 102 of **character.R**.
+[https://github.com/thomasp85/lime/blob/master/R/character.R](https://github.com/thomasp85/lime/blob/master/R/character.R)
+
+First we check if the explainer is actually an explainer.
+```{r}
+assertthat::assert_that(is.text_explainer(explainer))
+```
+Then we check model and output type.
+```{r}
+m_type <- model_type(explainer)
+m_type
+o_type <- output_type(explainer)
+o_type
+```
+There are then a few input parameter checks. Then, the following analysis due to SINGLE_EXPLANATION = FALSE.
+
+
+
+
+```{r}
+n_permutations = 5
+x = new_data
+
+case_perm <- permute_cases(x, n_permutations, explainer$tokenization, explainer$keep_word_position)
+
+# case_perm$permutations
+
+permutations_tokenized <- explainer$preprocess(case_perm$permutations)
+length(case_perm$permutations)
+length(permutations_tokenized)
+
+permutations_tokenized
+
+res_mtx <-  ft_predict(explainer$model, newdata = permutations_tokenized, rval = "dense")
+res_mtx_df <- as.data.frame(res_mtx)
+
+res_mtx_df
+
+case_res <- predict_model(explainer$model, n_permutations, newdata = permutations_tokenized, type = o_type)
+
+nrow(case_res)
+```
+```{r}
+case_res
+```
+
+
+
+```{r}
+case_perm
+```
+
+```{r}
+assert_that(all(!is.na(case_res)), msg = "Predictions contains some NAs")
+assert_that(nrow(case_res) == length(case_perm$permutations), msg = "Incorrect number of predictions")
+
+nrow(case_res)
+
+length(case_perm$permutations)
+```
+
+
+```{r}
+  case_perm <- permute_cases(x, n_permutations, explainer$tokenization, explainer$keep_word_position)
+  assert_that(length(case_perm$permutations) == n_permutations * length(x), msg = "Incorrect number of permutations")
+  case_ind <- local({
+    case_range <- seq_along(x)
+    case_ids <- unlist(lapply(case_range, rep, n_permutations))
+    split(seq_along(case_perm$permutations), case_ids)
+  })
+```
+
+
+```{r}
+case_res <- predict_model.fasttext(x = explainer$model, newdata = hypo_xtr_vec, type = "prob")
+case_res <- set_labels(case_res, explainer$model)
+case_res
+```
+
+
+
+
+```{r}
+is.text_explainer <- function(x) inherits(x, 'text_explainer')
+
+output_type <- function(x) {
+  switch(
+    model_type(x),
+    classification = 'prob',
+    regression = 'raw',
+    stop(model_type(x), ' models are not supported yet', call. = FALSE)
+  )
+}
+
+is.text_explainer(explainer)
+
+m_type <- model_type(ft_model)
+m_type
+o_type <- output_type(ft_model)
+o_type
+```
+
+```{r}
+case_res <- predict_model.fasttext(x = explainer$model, newdata = hypo_xtr_vec, type = "prob")
+case_res <- set_labels(case_res, explainer$model)
+
+nrow(case_res)
+
+```
+
+
+```{r}
+class(new_data)
+
+case_perm <- permute_cases(x, n_permutations, explainer$tokenization, explainer$keep_word_position)
+```
+
+
+```{r}
+explainer$preprocess(hypo_xtr_vec)
+```
+
+
+# Create Explainer - Condensed
+```{r}
+# Functions 
+predict_model.fasttext <- function(x, newdata, type, ...) {
+  res <- fastTextR::ft_predict(x, newdata = newdata, ...)
+  switch(
+    type,
+    raw = fastTextR::ft_predict(x, newdata = newdata, rval = "dense") %>% 
+      as.data.frame() %>% 
+      mutate(
+        Response = if_else(.[[1]] > .[[2]], '__label__1', '__label__0')
+        ) %>% 
+      select(Response),
+    prob = fastTextR::ft_predict(x, newdata, x$nlabels, rval = "dense") %>% 
+      as.data.frame() 
+  )
+} 
+
+model_type.fasttext <- function(x, ...) 'classification'
+
+# Inputs
+path_ft_model = "./../data/output_models/fasttext_model.bin"
+ft_model <- fastTextR::ft_load(path_ft_model)
+training_data_fasttext_path = "./../data/fasttext/fasttext_dataset_training.txt"
+
+# Create Explainer
+explainer <- lime::lime(
+  training_data_fasttext_path, 
+  ft_model,
+  bow = FALSE)
+
+
+```
+

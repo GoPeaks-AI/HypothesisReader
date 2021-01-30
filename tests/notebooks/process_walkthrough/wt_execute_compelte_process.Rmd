@@ -1,0 +1,322 @@
+---
+title: "Complete Process Performance Walkthrough"
+author: "Evan Canfield"
+date: "12/30/2020"
+output:
+  html_document:
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement the complete Causality Extraction NLP project.
+
+# Import
+## Libraries
+```{r import_libraries, message=FALSE}
+  # if (!require(pacman)) {install.packages('pacman')}
+  # p_load(
+  #   dplyr,
+  #   purrr,
+  #   stringr,
+  #   tidyr,
+  #   tidytext
+  # )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r load_source_files, warning=FALSE, message=FALSE}
+# Import All Scripts
+# script_path <- "../R/"
+# file_paths <- list.files(recursive = TRUE, 
+#                          path = script_path, pattern = ".R", 
+#                          full.names = TRUE)
+# 
+# for (file in file_paths){
+#   source(file)
+# }
+```
+
+## Python Modules
+```{r}
+np <- reticulate::import("numpy")
+joblib <- reticulate::import("joblib")
+nltk_stem <- reticulate::import("nltk.stem")
+```
+
+
+## Data
+```{r import_data}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+# Steps
+
+* Text Pre-processing
+* Hypothesis Extraction
+* Entity Extraction
+* Causality Classification
+* Final Output Table
+
+
+## Step By Step
+### Pre-process Checks
+```{r eval=FALSE, } 
+ # # For R CMD Checks
+ #  causal_relationship <- causality_pred <- cause <- effect <- file_name <- NULL
+ #  h_id <- hypothesis <- hypothesis_num <- NULL
+ # 
+ #  # Generate File or List of Files
+ #  pdf_path <- c()
+ #  if (is.not.null(file_path)){
+ #    pdf_paths <- file_path
+ # 
+ #  } else if (is.not.null(folder_path)) {
+ # 
+ #    pdf_paths <- list.files(recursive = FALSE,
+ #                            path = folder_path,
+ #                            pattern = ".pdf",
+ #                            full.names = TRUE)
+ # 
+ #  } else (
+ #    warning("File name(s) or folder path required.")
+ #  )
+```
+
+### Execute
+```{r}
+
+# Initialize
+lst_output <- vector(
+  mode   = "list",
+  length = length(pdf_paths)
+  )
+i = 1
+
+
+for (pdf in pdf_paths) {
+
+  file_name <- basename(pdf)
+
+  ## Text Pre-processing
+  ### Wrap in tryCatch to catch failed pdf to text conversions
+  possible_error <- tryCatch({
+    text_processed <- process_text(pdf)
+
+  },
+  error = function(e) {
+    e
+    error_statement <- paste0("Error. File ",
+                              file_name,
+                              " could not be converted into text.")
+    message(error_statement)
+
+  }
+  )
+
+  ### Skip processing if error observed
+  if(inherits(possible_error, "error")) next
+
+  ## Hypothesis Classification
+  hypothesis_df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+
+  # Test if empty
+  hypothesis_empty_check <- hypothesis_df %>%
+    dplyr::pull(hypothesis)
+
+  hypothesis_empty <- purrr::is_empty(hypothesis_empty_check)
+
+  if (!(hypothesis_empty)) {
+    ## Entity extraction
+    entities <- entity_extraction(hypothesis_df)
+
+    # Test if empty
+    empty_entity_check <- entities %>%
+      tidyr::drop_na() %>%
+      dplyr::pull(cause)
+
+    entity_empty <- purrr::is_empty(empty_entity_check)
+
+    if (!(entity_empty)) {
+      ## Causality classification
+      causality_class <- causality_classification(hypothesis_df)
+      causality_class <- data.frame(causality_class)
+
+      # Compile table
+      iter_df <- cbind(hypothesis_df, entities) %>%
+        tidyr::drop_na()
+      iter_df <- cbind(iter_df, causality_class)
+      iter_df$file_name <- file_name
+
+      # Modify Headers and Format
+      iter_df <- iter_df %>%
+        dplyr::rename(
+          hypothesis_num = h_id,
+          causal_relationship = causality_pred
+        ) %>%
+        dplyr::select(
+          file_name, hypothesis_num, hypothesis, cause,
+          effect, causal_relationship
+        ) %>%
+        purrr::modify_if(is.factor, as.character)
+
+      # Store in List
+      lst_output[[i]] <- iter_df
+      i <- i + 1
+    }
+  } else {
+    no_hypothesis<- paste("File ",file_name ,": Hypothesis not detected.")
+    message(no_hypothesis)
+    next
+  }
+
+  pdf_complete_message <- paste("File ", file_name,": Complete")
+  message(pdf_complete_message)
+}
+
+# Group Output Table for All Files into one table
+output_df <- dplyr::bind_rows(lst_output)
+
+# Drop Causality Predictions if Entity is Missing
+
+output_df <- remove_causality_pred(output_df)
+
+output_df
+```
+``
+
+
+```{r}
+
+# Remove causality predictions if both entities are not generated
+output_df <- remove_causality_pred(output_df)
+
+```
+
+
+```{r step_by_step, eval=FALSE}
+m <- 1
+n <- 10
+input_paths <- pdf_paths[m:n]
+
+i <- 1
+lst_output <- vector(mode = "list", length = length(pdf_paths))
+
+for (pdf in input_paths){
+
+  file_name <- last(str_split(pdf, pattern = "/")[[1]])
+  print(paste0("File Name: ", file_name))
+  
+  
+  # Error Catching for PDF Conversion
+  possible_error <- tryCatch({
+      
+      text_processed <- process_text(pdf)
+      
+    },
+      
+      error = function(e) { 
+        e
+        error_statement <- paste0("Error. File ", 
+                                  file_name, 
+                                  " could not be converted into text.")
+        print(error_statement)
+        
+        }
+      )
+  
+  ### Skip processing if error observed.
+  if(inherits(possible_error, "error")) next 
+
+  ## Extract Hypothesis
+  hypothesis <- hypothesis_extraction(text_processed, fasttext_tag = FALSE)
+  
+  ### Test if Empty
+  empty_hypothesis_test <- hypothesis %>% pull(hypothesis)
+  hypothesis_empty <- is_empty(empty_hypothesis_test)
+  
+
+  if (!(hypothesis_empty)) {
+    
+    ## Entity Extraction
+    entities <- entity_extraction(hypothesis)
+    
+    ### Test if Empty
+    empty_entity_test <- entities %>% drop_na() %>% pull(cause)
+    entity_empty <- is_empty(empty_entity_test)
+    print(paste0("Entity Empty Test: ", entity_empty))
+
+    
+    if (!(entity_empty)) {
+      
+      ## Causality Classification
+      causality_class <- causality_classification(hypothesis)
+      causality_class <- data.frame(causality_class)
+      
+      # Compile Table
+      iter_df <- cbind(hypothesis, entities) %>% drop_na()
+      iter_df <- cbind(iter_df, causality_class)
+      iter_df$file_name <- file_name
+      
+      # Modify Headers and Format
+      iter_df <- iter_df %>% 
+        rename(
+          hypothesis_num = h_id,
+          causal_relationship = causality_pred
+        ) %>% 
+        select(
+          file_name, hypothesis_num, hypothesis, cause, 
+          effect, causal_relationship
+        ) %>% 
+        modify_if(is.factor, as.character)
+      
+        lst_output[[i]] <- iter_df
+        i <- i + 1
+    } else {
+      
+      print(paste0("Entity Not Detected: ", file_name)
+            
+    } 
+  } else { 
+    
+    print(paste0("Hypothesis Not Extracted: ", file_name)
+          
+  }
+}
+
+lst_output <- lst_output[lengths(lst_output) != 0]
+```
+
+# Test Function
+## Single PDF
+```{r function_file_single, eval  = FALSE}
+m <- 1
+n <- 3
+input_paths <- pdf_paths[n]
+
+gen_output_table(file_path = input_paths)
+```
+
+# List of Multiple PDFs
+```{r function_file_multiple, eval  = FALSE}
+m <- 1
+n <- 3
+input_paths <- pdf_paths[m:n]
+gen_output_table(file_path = input_paths)
+```
+
+# Folder
+```{r function_folder}
+folder_path <- "./../data/acadmic_papers_pdf/"
+
+gen_output_table(folder_path = folder_path)
+```
+

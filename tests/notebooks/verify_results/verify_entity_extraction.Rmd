@@ -1,0 +1,209 @@
+---
+title: "Entity Extraction Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to evaluate the Entity Extraction model, which was developed in Python. 
+
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    caret,
+    dplyr,
+    readxl,
+    reticulate,
+    stringr,
+    tidyr
+  )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r}
+
+```
+
+## Data
+In order to evaluate the performance of the Entity Extraction Model, we need to use the same dataset
+used in training the model.
+```{r import_data}
+targets_test <- read.csv("./../data/entity_extraction_test_target_classes.csv", 
+                            header = FALSE)
+features_test <- read.csv("./../data/entity_extraction_test_set.csv")
+```
+
+## Python Modules
+In order to use the Entity Extraction model in R, we need to import the Tensorflow Python package via the Reticulate Package. In addition, to ensure the training/test split is equivalent, we will also use the Sci-kit Learn Module.
+
+**Note**: In order to load Python modules in R, a Virtual Environment or Conda Environment must be created, connected to, and the relevant packages loaded. Those steps occurred before executing this notebooks
+```{r import_python_module, warning = FALSE}
+# General
+np <- import("numpy")
+
+tf <- import("tensorflow")
+```
+
+## Entity Extraction Model
+With Tensorflow loaded, we can upload the Entity Extraction model.
+```{r import_model, warning=FALSE, message=FALSE}
+path_model <- "./../data/models_python/entity_extraction_w_processing_keras/"
+
+model <- tf$keras$models$load_model(path_model)
+```
+
+## Set Seed /Random State
+```{r set_seed}
+rs <- as.integer(5590)
+
+np$random$seed(rs)
+tf$random$set_seed(rs)
+```
+
+### Inspect
+With the model loaded we will inspect to ensure it looks as we expect.
+```{r model_summary, warning=FALSE}
+model$summary()
+```
+
+# Process Data
+In order to evaluate the model performance, we will use the same test dataset that was used when developing the model in Python. 
+
+```{r gen_test_set}
+# Extract Test Text
+X_test <- features_test %>% select(text) %>% pull()
+```
+
+With our test set in the form we need, we can generate predictions.
+```{r gen_predictions, warning=FALSE}
+# Convert to Numpy Array
+X_test_np <- np$array(X_test)
+y_pred <- model$predict_classes(X_test_np)
+```
+
+The Entity Extraction model returns the predictions as a 2D array. For easier downstream use, we will convert this structure into a list of vector, with each vector being the class predictions for a hypothesis.
+```{r convert_predictions}
+# Initialize Output List
+y_pred_lst <- vector(mode = "list", length = dim(y_pred)[1])
+
+for (i in  1:dim(y_pred)[1]){
+  # Initialize Hypothesis Vector
+  hypothesis_classes <- vector(mode = "integer", length = dim(y_pred)[2])
+
+  for (j in 1:dim(y_pred)[2]){
+    hypothesis_classes[j] <- y_pred[i,j]
+    # print(y_pred[i,j])
+  }
+  # print(hypothesis_classes)
+  y_pred_lst[[i]] <- hypothesis_classes
+}
+```
+
+We need to select the target test set as well. Currently we have all target values in a dataframe. We need to reduce this to the test set, and convert to the same form as our predictions.
+```{r convert_y_test}
+# Convert Dataframe to List of Vectors
+y_test_lst <- as.list(as.data.frame(t(targets_test)))
+```
+
+For final evaluations we need to convert both test and predictions set from a list of vectors to a individual vectors, each observation appended to each other.
+```{r list_to_vector}
+
+# List to Vector Function
+list_to_vector <- function(input_list){
+  
+  # Determine Length of Output Vector
+  output_vector_len <- sum(lengths(y_pred_lst))
+
+  # Initialize
+  output_vector <- c()
+  
+  # Combine List Element Vectors into Single Vector
+  for (vector in input_list){
+    output_vector <- c(output_vector, vector)
+  } 
+  
+  return(output_vector)
+}
+
+# Convert 
+y_pred_vec <- list_to_vector(y_pred_lst)
+y_test_vec <- list_to_vector(y_test_lst)
+```
+
+# Evaluate Model
+With our data in the correct format, we can finally evaluate the performance of the model against the test set, in order to compare the model performance to what was observed in Python.
+
+## Caret Package
+```{r eval_caret}
+y_test_pred_df <- data.frame(y_pred_vec, y_test_vec) %>% 
+  rename(obs = y_test_vec,
+         pred = y_pred_vec) %>% 
+  mutate(
+    obs = as.factor(obs),
+    pred = as.factor(pred)
+  )
+
+caret::confusionMatrix(y_test_pred_df$pred, 
+                       y_test_pred_df$obs)
+```
+
+## Manual Calculation
+```{r eval_manual}
+
+# Initialize Vectors
+num1 = c()
+num2 = c()
+error = c()
+false_1 = c()
+false_2 = c()
+
+
+for (i in 1:length(y_pred_vec)) {
+  
+  if (y_test_vec[i] == 1){
+    num1 = append(num1, 1)
+  }
+  
+  if (y_test_vec[i] == 2){
+    num2 = append(num2, 1)
+  }
+  
+  if (y_test_vec[i] == y_pred_vec[i]){
+    error = append(error, 0)
+  } else{
+    error = append(error, 1)
+      if (y_test_vec[i] == 1){
+        false_1 = append(false_1, 1)
+      } else {
+        false_1 = append(false_1, 0)
+      }
+      if (y_test_vec[i] == 2){
+        false_2 = append(false_2, 1)
+      } else {
+        false_2 = append(false_2, 0)
+      }
+  }
+}
+
+# Accuracy - Overall
+acc_overall <- 1 - sum(error)/length(error)
+print(paste0("Accuracy - Overall: ", round(acc_overall*100,1), "%"))
+
+# Sensitivity - Node 1 Classification
+sen_node_1 <- 1 - sum(false_1)/sum(num1)
+print(paste0("Sensitivity - Node 1: ", round(sen_node_1*100,1), "%"))
+
+# Sensitivity - Node 2
+sen_node_2 <- 1 - sum(false_2)/sum(num2)
+print(paste0("Sensitivity - Node 2: ", round(sen_node_2*100,1), "%"))
+```
+

@@ -1,0 +1,85 @@
+---
+title: "Entity Extraction Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output:
+  html_document:
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test using different methods for converting raw PDF to text
+
+# Import
+## Libraries
+```{r import_libraries, message=FALSE}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    data.table,
+    dplyr,
+    readxl,
+    reticulate,
+    stringr,
+    tidyr
+  )
+```
+
+## Source Files
+The following imports functions defined in the sourced R scripts.
+```{r load_source_files, warning=FALSE, message=FALSE}
+# Import All Scripts
+script_path <- "../R/"
+file_paths <- list.files(recursive = TRUE, 
+                         path = script_path, pattern = ".R", 
+                         full.names = TRUE)
+
+for (file in file_paths){
+  source(file)
+}
+```
+
+## Python Modules
+```{r}
+parser <- import("tika.parser")
+
+```
+
+## Data
+```{r import_data}
+# PDF Input
+## Define Path
+pdf_path <- "./../data/acadmic_papers_pdf_sample/jv04amj.pdf"
+```
+
+# R - RTika
+The follow processes the sample PDF using Tika via the R package.
+```{r}
+# pdf_txt_raw_r <- tika_text(pdf_path)
+# 
+# pdf_txt_raw_r %>% substr(1,100)
+```
+
+# Python - Tika
+```{r}
+pdf_tika_py <- parser$from_file(pdf_path)
+
+pdf_txt_raw_py_tika <- pdf_tika_py$content
+
+pdf_txt_raw_py_tika %>% substr(1,100)
+```
+
+# Python - PDF Miner
+
+```{r}
+# Source PDFMiner Script
+source_python("./../source/pdf_to_text.py")
+
+pdf_txt_raw_py_pdfminer <- pdf_to_text(pdf_path)
+
+pdf_txt_raw_py_pdfminer %>% substr(1,100)
+```
+

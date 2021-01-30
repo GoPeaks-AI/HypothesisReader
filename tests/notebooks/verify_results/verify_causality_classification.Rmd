@@ -1,0 +1,101 @@
+---
+title: "Causality Classification Performance Evaluation - R & Python"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to evaluate the Causality Classification model, which was developed in Python. 
+
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr,
+    reticulate
+  )
+```
+
+## Python Modules
+In order to use the Entity Extraction model in R, we need to import the Tensorflow Python package via the Reticulate Package. In addition, to ensure the training/test split is equivalent, we will also use the Sci-kit Learn Module.
+
+**Note**: In order to load Python modules in R, a Virtual Environment or Conda Environment must be created, connected to, and the relevant packages loaded. Those steps occurred before executing this notebooks
+```{r import_python_module, warning = FALSE}
+# General
+np <- import("numpy")
+joblib <- import("joblib")
+skl_met <- import("sklearn.metrics")
+```
+
+
+## Data
+In order to evaluate the performance of the Entity Extraction Model, we need to use the same dataset
+used in training the model.
+```{r import_data}
+df_test <- read.csv("./../data/causality_classification_test_data.csv", 
+                    stringsAsFactors = FALSE)
+
+df_test %>% head(20)
+```
+
+## Causality Classification Model
+With Tensorflow loaded, we can upload the Entity Extraction model.
+```{r import_model, warning=FALSE, message=FALSE}
+path_model <- "./../models/causality_bow_pipeline_naive_bayes.pkl"
+
+model <- joblib$load(path_model)
+```
+
+## Set Seed /Random State
+```{r set_seed}
+rs <- as.integer(5590)
+
+np$random$seed(rs)
+```
+
+# Process Data
+In order to evaluate the model performance, we will use the same test dataset that was used when developing the model in Python. 
+
+```{r gen_test_set}
+# Extract Test Text
+X_test <- df_test %>% pull(features)
+y_test <- df_test %>% pull(target)
+
+```
+
+With our test set in the form we need, we can generate predictions.
+```{r gen_predictions, warning=FALSE}
+
+y_pred <- model$predict(X_test)
+
+y_pred_prob <- model$predict_proba(X_test)
+
+```
+
+
+```{r}
+X_test[99]
+
+X_test[7:8]
+y_pred
+y_pred_prob
+```
+
+
+# Evaluate Model
+With our data in the correct format, we can finally evaluate the performance of the model against the test set, in order to compare the model performance to what was observed in Python.
+
+## Sklearn Classification Report
+While the formatting is not very legible, the values match.
+```{r}
+clf_report <- skl_met$classification_report(y_test,y_pred)
+
+clf_report
+```
