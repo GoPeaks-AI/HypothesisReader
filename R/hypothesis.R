@@ -104,30 +104,9 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   # For R CMD Checks
   h_id <- hypothesis <- NULL
 
-  # Tokenize into sentences
-  processing_text <- stringr::str_c(
-    input_text,
-    collapse = " "
-  )
-
-  processing_text <- tokenizers::tokenize_sentences(
-    processing_text,
-    strip_punct = FALSE) %>%
-    unlist()
-
-  # Replace double spaces
-  processing_text <- stringr::str_replace_all(
-    string      = processing_text,
-    pattern     = "  ",
-    replacement = " "
-  )
-
-  # Normalize text case
-  processing_text <- tolower(processing_text)
-
   # Hypothesis Extraction -----------------------------------------------------
   # Identify lines with hypothesis pattern
-  h_match <- processing_text %>%
+  h_match <- input_text %>%
     stringr::str_match(
       pattern = regex_hypo_marker
     )
@@ -137,6 +116,10 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
 
   # Identify unique hypothesis numbers
   h_match_num_unq <- unique(h_match_num)
+
+  # Remove known erroneous hypothesis formats
+  error_hypothesis <- c("na")
+  h_match_num_unq <- setdiff(h_match_num_unq, error_hypothesis)
 
   # Drop NA
   h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
@@ -151,7 +134,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   }
 
   # Reduce text to only initial hypothesis instances
-  h_statements <- processing_text[h_initial]
+  h_statements <- input_text[h_initial]
 
   # Split Statements On Indicator (Defined in Processing) ----------------------
   ## Define
@@ -174,25 +157,24 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
 
   # Drop Duplicate Hypothesis Calls --------------------------------------------
   ## Extract hypothesis number
-  h_number <- h_statements %>%
+  h_id <- h_statements %>%
     stringr::str_extract("hypo (.*?):") %>%
     stringr::str_remove_all("hypo ") %>%
-    stringr::str_remove_all(":") %>%
-    as.integer()
+    stringr::str_remove_all(":")
 
   ## Identify Duplicate Hypothesis Numbers
   logical_hypothesis_3 <- vector(
     mode   = "logical",
-    length = length(h_number)
+    length = length(h_id)
   )
 
   h_tracker <- vector(
     mode   = "integer",
-    length = length(h_number)
+    length = length(h_id)
   )
 
-  for (i in seq_along(h_number)) {
-    num <- h_number[i]
+  for (i in seq_along(h_id)) {
+    num <- h_id[i]
 
     if (is.na(num)){
       logical_hypothesis_3[i] = FALSE
@@ -212,24 +194,17 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   ## Drop duplicates and non-hypotheses
   h_statements <- h_statements[logical_hypothesis_3]
 
-  # # Fix words split over new line
-  # for (i in seq_along(word_split_error)) {
-  #   # Select Incorrect and Fixed Words
-  #   word_split <- word_split_error[i]
-  #   word_fix <- str_replace_all(string = word_split,
-  #                               pattern = " ",
-  #                               replacement = "")
-  #
-  #   # Replace All Instances
-  #   h_statements <- h_statements %>%
-  #     str_replace_all(pattern = word_split,
-  #                     replacement = word_fix)
-  # }
+  # Create Output Table -------------------------------------------------------
+  # Extract hypothesis ID post duplicate drops
+  h_id <- h_statements %>%
+    stringr::str_extract("hypo (.*?):") %>%
+    stringr::str_remove_all("hypo ") %>%
+    stringr::str_remove_all(":")
 
   # Save current state for causality classification input
   hypothesis_causality <- h_statements
 
-  # Drop ~Hypo #:~
+  # Drop ~Hypo #:~ for entity extraction input
   hypothesis_entity <- gsub(".*: ","", h_statements)
 
   # Filter with hypothesis classification model
@@ -249,8 +224,9 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
     }
   }
 
-  # Create Dataframe with Hypothesis Number and Hypothesis
+  # Create Dataframe with hypothesis number and hypothesis
   df_hypothesis <- data.frame(
+    h_id,
     hypothesis_entity,
     hypothesis_causality,
     stringsAsFactors = FALSE
@@ -262,7 +238,7 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
       hypothesis = hypothesis_entity
     ) %>%
     dplyr::mutate(
-      h_id = paste0("h_", dplyr::row_number())
+      h_id = paste0("h_", h_id)
     ) %>%
     dplyr::select(h_id, hypothesis, hypothesis_causality)
 

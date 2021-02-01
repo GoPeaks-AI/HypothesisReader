@@ -9,30 +9,59 @@ regex_ip <- "(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})"
 regex_parens <- "\\(([^()]+)\\)"
 
 ## Identify Hypothesis Formats
-regex_hypo <- c("h[0-9]{1,3}[a-zA-Z]\\:",
-                "H[0-9]{1,3}[a-zA-Z]\\:",
-                "h[0-9]{1,3}[a-zA-Z]\\.",
-                "H[0-9]{1,3}[a-zA-Z]\\.",
-                "h[0-9]{1,3}[a-zA-Z]",
-                "H[0-9]{1,3}[a-zA-Z]",
-                "hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-                "Hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-                "hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-                "Hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-                "hypothesis [0-9]{1,3}[a-zA-Z]",
-                "Hypothesis [0-9]{1,3}[a-zA-Z]",
-                "h[0-9]{1,3}\\:",
-                "H[0-9]{1,3}\\:",
-                "h[0-9]{1,3}\\.",
-                "H[0-9]{1,3}\\.",
-                "h[0-9]{1,3}",
-                "H[0-9]{1,3}",
-                "hypothesis [0-9]{1,3}\\:",
-                "Hypothesis [0-9]{1,3}\\:",
-                "hypothesis [0-9]{1,3}\\.",
-                "Hypothesis [0-9]{1,3}\\.",
-                "hypothesis [0-9]{1,3}",
-                "Hypothesis [0-9]{1,3}")
+regex_hypo <- c(
+  "h[0-9]{1,3}[a-zA-Z]\\:",
+  "H[0-9]{1,3}[a-zA-Z]\\:",
+  "h[0-9]{1,3}[a-zA-Z]\\.",
+  "H[0-9]{1,3}[a-zA-Z]\\.",
+  "h[0-9]{1,3}[a-zA-Z]",
+  "H[0-9]{1,3}[a-zA-Z]",
+  "hypothesis [0-9]{1,3}[a-zA-Z]\\:",
+  "Hypothesis [0-9]{1,3}[a-zA-Z]\\:",
+  "hypothesis [0-9]{1,3}[a-zA-Z]\\.",
+  "Hypothesis [0-9]{1,3}[a-zA-Z]\\.",
+  "hypothesis [0-9]{1,3}[a-zA-Z]",
+  "Hypothesis [0-9]{1,3}[a-zA-Z]",
+  "h[0-9]{1,3}\\:",
+  "H[0-9]{1,3}\\:",
+  "h[0-9]{1,3}\\.",
+  "H[0-9]{1,3}\\.",
+  "h[0-9]{1,3}",
+  "H[0-9]{1,3}",
+  "hypothesis [0-9]{1,3}\\:",
+  "Hypothesis [0-9]{1,3}\\:",
+  "hypothesis [0-9]{1,3}\\.",
+  "Hypothesis [0-9]{1,3}\\.",
+  "hypothesis [0-9]{1,3}",
+  "Hypothesis [0-9]{1,3}"
+  )
+
+regex_proposition <- c(
+  "p[0-9]{1,3}[a-zA-Z]\\:",
+  "P[0-9]{1,3}[a-zA-Z]\\:",
+  "p[0-9]{1,3}[a-zA-Z]\\.",
+  "P[0-9]{1,3}[a-zA-Z]\\.",
+  "p[0-9]{1,3}[a-zA-Z]",
+  "P[0-9]{1,3}[a-zA-Z]",
+  "proposition [0-9]{1,3}[a-zA-Z]\\:",
+  "Proposition [0-9]{1,3}[a-zA-Z]\\:",
+  "proposition [0-9]{1,3}[a-zA-Z]\\.",
+  "Proposition [0-9]{1,3}[a-zA-Z]\\.",
+  "proposition [0-9]{1,3}[a-zA-Z]",
+  "Proposition [0-9]{1,3}[a-zA-Z]",
+  "p[0-9]{1,3}\\:",
+  "P[0-9]{1,3}\\:",
+  "p[0-9]{1,3}\\.",
+  "P[0-9]{1,3}\\.",
+  "p[0-9]{1,3}",
+  "P[0-9]{1,3}",
+  "proposition [0-9]{1,3}\\:",
+  "Proposition [0-9]{1,3}\\:",
+  "proposition [0-9]{1,3}\\.",
+  "Proposition [0-9]{1,3}\\.",
+  "proposition [0-9]{1,3}",
+  "Proposition [0-9]{1,3}"
+)
 
 ## Identify Numbers
 regex_return_num <- "(\\d)+"
@@ -211,19 +240,26 @@ standardize_hypothesis <- Vectorize(
     # Check if hypothesis detected
     if (!is.na(extract_phrase)){
 
+      # # Extract hypothesis number
+      # extact_number <- stringr::str_extract(
+      #   string  = extract_phrase,
+      #   pattern = regex_return_num
+      # )
+
       # Extract hypothesis number
-      extact_number <- stringr::str_extract(
-        string  = extract_phrase,
-        pattern = regex_return_num
-      )
+      extract_term <- extract_phrase %>%
+        stringr::str_split(pattern = " ")
+
+      extract_number <- extract_term[[1]][2]
 
       # Create new string
-      replacement_string <- paste0("<split>Hypo ", extact_number, ": ")
+      replacement_string <- paste0("<split>Hypo ", extract_number, ": ")
 
       # Replace hypothesis with new value
       output_string <- stringr::str_replace(
         string      = input_string,
-        pattern     = regex_hypothesis_string,
+        pattern     = extract_phrase,
+        # pattern     = regex_hypothesis_string,
         replacement = replacement_string
       )
 
@@ -236,6 +272,126 @@ standardize_hypothesis <- Vectorize(
 
   }
 )
+
+#' Remove periods directly after standard hypothesis format
+#'
+#' In cases where there is a period (or space then period) directly after the
+#' standardized hypothesis format, the sentence tokenization will split the
+#' hypothesis tag from the hypothesis content. This function identifies those
+#' cases and removes the period.
+#'
+#' @param input_string input string of text
+#' @noRd
+
+remove_period <- Vectorize(
+  function(input_string){
+
+    # Regex identifies hypothesis with trailing period
+    regex_hypo_marker_w_period <- "<split>Hypo (.*?):\\s?."
+
+    # Extract identified value
+    extract_phrase <- stringr::str_extract(
+      string  = input_string,
+      pattern = regex_hypo_marker_w_period
+    )
+
+    # Check if hypothesis wither trailing period is detected
+    if (!is.na(extract_phrase)){
+
+      # Remove trailing period
+      output_string <- stringr::str_replace(
+        string      = input_string,
+        pattern     = ":\\s?.",
+        replacement = ":"
+      )
+
+    } else {
+      output_string <- input_string
+
+    }
+
+    output_string
+
+  }
+)
+
+
+#' Break out sentences with multiple standardized hypothesis tags
+#'
+#' In cases where there are multiple standardized hypothesis tags, hypothesis
+#' identification can be compromised, as the downstream process only acts on
+#' the first instance of a hypothesis tag. Therefore, the following function
+#' splits any sentence with multiple standardized hypothesis tags, ensuring
+#' one tag max per sentence
+#'
+#' @param input.v vector of processed text sentences
+#' @noRd
+#
+
+break_out_hypothesis_tags <- function(input.v) {
+
+  n_output_sentences <- output.list <- output.v <- split_index <- NULL
+  start <- temp.v <- NULL
+
+  # Initialize
+  output.list <- vector(mode = "list", length = length(input.v))
+  regex_hypo_marker <- "<split>Hypo (.*?):"
+
+  # Iterate through all input sentences
+  for (i in seq_along(input.v)) {
+    sentence <- input.v[i]
+
+    # Locate all instances of hypothesis tags
+    hypo_locate <- stringr::str_locate_all(
+      string  = sentence,
+      pattern = regex_hypo_marker
+    )
+
+    # Convert to dataframe
+    hypo_locate.df <- as.data.frame(hypo_locate[[1]])
+
+    # Extract split index vector
+    split_index <- hypo_locate.df %>% dplyr::pull(start)
+
+    # If hypothesis tag is not identified, no action
+    if (purrr::is_empty(split_index)) {
+
+      output.list[[i]] <- sentence
+
+    } else {
+      # Add start and stop string indexes
+      split_index <- c(1, split_index, nchar(sentence) + 1)
+
+      # Determine number of sentence splits
+      n_output_sentences <- length(split_index) - 1
+
+      # Initialize
+      j <- 1
+      temp.v <- vector(mode = "character", length = n_output_sentences)
+
+      # Split input sentence into separate parts
+      while (j <= n_output_sentences) {
+        # Extract sentence fragment
+        sentence_split <- stringr::str_sub(
+          string = sentence,
+          start  = split_index[j],
+          end    = split_index[j+1] - 1
+        )
+
+        # Save extract to temporary vector
+        temp.v[j] = sentence_split
+
+        j <- j + 1
+
+        }
+      # save temporary vector to output list
+      output.list[[i]] <- temp.v
+      }
+  }
+  # Convert output list to vector
+  output.v <- unlist(output.list, use.names = FALSE)
+  output.v
+}
 
 
 #' Process PDF text
@@ -250,12 +406,8 @@ standardize_hypothesis <- Vectorize(
 #' @param input_path path to PDF file
 
 process_text <- function(input_path){
-  dummy_pdfminer_load <- pdf_to_text <- NULL
+  pdf_to_text <- NULL
   # Convert --------------------------------------------------------------------
-
-  ## Source pdf conversion script
-  # reticulate::source_python(get_path_pdf2text())
-  # input_text <- pdf_to_text(input_path)
 
   ## Use PDFminer.six high level function
   input_text <- pdfminer$extract_text(input_path)
@@ -286,7 +438,7 @@ process_text <- function(input_path){
     string  = processing_text,
     pattern = regex_section)
 
-  ### Drop elements After first instance of Referece or Bibliography is
+  ### Drop elements After first instance of Reference or Bibliography is
   ### identified.
   if (any(logical_section)){
     index <- min(which(logical_section == TRUE))
@@ -344,28 +496,28 @@ process_text <- function(input_path){
     location     = "any"
   )
 
-  # Parenthesis ----------------------------------------------------------------
-  ## Remove text within parenthesis
-  ### Define term to identify line splits
-  line_split_indicator <- " -LINESPLIT-"
-
-  ### Concatenate all vector elements, separated by line split
-  processing_text <- stringr::str_c(
-    processing_text,
-    collapse = line_split_indicator
-  )
-
-  # Remove content within parenthesis
-  processing_text <- stringr::str_remove_all(
-    string  = processing_text,
-    pattern = regex_parens
-  )
-
-  # Split single string back into character vectors
-  processing_text <- stringr::str_split(
-    string  = processing_text,
-    pattern = line_split_indicator) %>%
-    unlist()
+  # # Parenthesis ----------------------------------------------------------------
+  # ## Remove text within parenthesis
+  # ### Define term to identify line splits
+  # line_split_indicator <- " -LINESPLIT-"
+  #
+  # ### Concatenate all vector elements, separated by line split
+  # processing_text <- stringr::str_c(
+  #   processing_text,
+  #   collapse = line_split_indicator
+  # )
+  #
+  # # Remove content within parenthesis
+  # processing_text <- stringr::str_remove_all(
+  #   string  = processing_text,
+  #   pattern = regex_parens
+  # )
+  #
+  # # Split single string back into character vectors
+  # processing_text <- stringr::str_split(
+  #   string  = processing_text,
+  #   pattern = line_split_indicator) %>%
+  #   unlist()
 
   # Empty Vectors --------------------------------------------------------------
   ## Drop empty vectors
@@ -382,8 +534,49 @@ process_text <- function(input_path){
     logical_method = "inverse"
   )
 
+  # Standardize Hypothesis/Propositions-----------------------------------------
+  ## Hypothesis
+  ### Generate regex
+  regex_hypo_str <- gen_regex(
+    input_string = regex_hypo,
+    match        = "partial"
+  )
+
+  processing_text <- standardize_hypothesis(
+    input_string            = processing_text,
+    regex_hypothesis_string = regex_hypo_str
+  )
+
+  ## Drop object names
+  processing_text <- unname(processing_text)
+
+  ## Propositions
+  ### Generate regex identify hypotheses
+  regex_prop_str <- gen_regex(
+    input_string = regex_proposition,
+    match        = "partial"
+  )
+
+  processing_text <- standardize_hypothesis(
+    input_string            = processing_text,
+    regex_hypothesis_string = regex_prop_str
+  )
+
+  ## Drop object names
+  processing_text <- unname(processing_text)
+
+
+  # Remove trailing period for standardizes hypothesis tags
+  processing_text <- remove_period(
+    input_string = processing_text
+  )
+
+  ## Drop object names
+  processing_text <- unname(processing_text)
+
+
   # Tokenize Sentences ---------------------------------------------------------
-  ## Convert Vector Elements into Sentences
+  ## Pass 1 - Tokenizers
   processing_text <- stringr::str_c(
     processing_text,
     collapse = " "
@@ -393,6 +586,19 @@ process_text <- function(input_path){
     processing_text,
     strip_punct = FALSE) %>%
     unlist()
+
+  ## Pass 2 - Stringr
+  ### Instances of sentences not being correctly tokenized have been seen
+  ### using the Tokenizer method. This additional sentence tokenization step
+  ### has been added to compensate
+  processing_text <- stringr::str_split(
+    string  = processing_text,
+    pattern = "\\.") %>%
+    unlist()
+
+  ## Drop empty vectors
+  processing_text <- processing_text[processing_text!=""]
+
 
   ## Replace double spaces with single
   processing_text <- stringr::str_replace_all(
@@ -417,22 +623,10 @@ process_text <- function(input_path){
     logical_method = "inverse"
   )
 
-  # Standardize Hypothesis -----------------------------------------------------
-  ## Generate regex identify hypotheses
-  regex_hypo_str <- gen_regex(
-    input_string = regex_hypo,
-    match        = "partial"
-  )
+  # Break Out Sentences With Multiple Hypothesis Tags --------------------------
+  processing_text = break_out_hypothesis_tags(input.v = processing_text)
 
-  processing_text <- standardize_hypothesis(
-    input_string            = processing_text,
-    regex_hypothesis_string = regex_hypo_str
-  )
-
-  ## Drop object names
-  processing_text <- unname(processing_text)
-
-  # Misc Text Replacement ------------------------------------------------------
+  # Misc Text Actions ----------------------------------------------------------
   ## Replace double colons
   processing_text <- stringr::str_replace_all(
     string      = processing_text,
@@ -451,6 +645,9 @@ process_text <- function(input_path){
     pattern     = ": \\.",
     replacement = ":"
   )
+
+  ## Normalize Case
+  processing_text <- tolower(processing_text)
 
   processing_text
 }
