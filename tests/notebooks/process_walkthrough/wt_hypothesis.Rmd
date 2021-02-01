@@ -1,0 +1,232 @@
+---
+title: "Walkthrough - Hypothesis Extraction"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+
+## Assisting Functions
+```{r}
+#' Inspect Text String
+inspect <- function(x, m = 100, span = 20) {
+  n = m + span - 1
+  x[m:n]
+}
+```
+
+## Regex
+```{r}
+regex_hypo_marker <- "<split>hypo (.*?):"
+```
+
+
+# Preceding Steps
+## Process Text
+```{r}
+input_path <- pdf_paths[5]
+input_path
+input_text <- process_text(input_path)
+
+inspect(input_text, m = 180)
+```
+
+# Extract Hypothesis
+
+```{r}
+# Identify lines with hypothesis pattern
+h_match <- input_text %>%
+  stringr::str_match(
+    pattern = regex_hypo_marker
+  )
+
+# h_match
+```
+
+
+## Extract hypothesis number
+```{r}
+h_match_num <- h_match[,2]
+
+h_match_num
+```
+
+## Identify unique hypothesis numbers
+```{r}
+# Identify unique hypothesis numbers
+h_match_num_unq <- unique(h_match_num)
+
+h_match_num_unq
+
+# Remove known erroneous hypothesis formats
+error_hypothesis <- c("na")
+
+h_match_num_unq <- setdiff(h_match_num_unq, error_hypothesis)
+
+# Drop NA
+h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
+
+h_match_num_unq
+```
+
+## Determine Vector Index of Initial Hypthesis Instance
+```{r}
+# Determine vector index of initial hypothesis statements
+h_initial <- c()
+for (i in h_match_num_unq){
+  intial_idx <- tapply(seq_along(h_match_num),
+                       h_match_num,
+                       min)[i]
+  h_initial <- c(h_initial, intial_idx)
+}
+
+# Reduce text to only initial hypothesis instances
+h_statements <- input_text[h_initial]
+h_statements
+```
+
+## Split Statements on Hypothesis Indicator
+```{r}
+# Split Statements On Indicator (Defined in Processing) ----------------------
+## Define
+split_indicator <- "<split>"
+
+## Split on indicator
+h_statements <- stringr::str_split(
+  string  = h_statements,
+  pattern = split_indicator) %>%
+  unlist()
+
+## Detect statements which contain "Hypo"
+logical_hypothesis_2 <- stringr::str_detect(
+  string  = h_statements,
+  pattern = "hypo"
+)
+
+## Drop Statements that Do Not Include "Hypo"
+h_statements <- h_statements[logical_hypothesis_2]
+
+h_statements
+```
+
+## Drop Duplicate Hypothesis Calls
+```{r}
+ # Drop Duplicate Hypothesis Calls --------------------------------------------
+## Extract hypothesis number
+h_id <- h_statements %>%
+  stringr::str_extract("hypo (.*?):") %>%
+  stringr::str_remove_all("hypo ") %>%
+  stringr::str_remove_all(":") 
+
+h_id
+
+## Identify Duplicate Hypothesis Numbers
+logical_hypothesis_3 <- vector(
+  mode   = "logical",
+  length = length(h_id)
+)
+
+h_tracker <- vector(
+  mode   = "integer",
+  length = length(h_id)
+)
+
+for (i in seq_along(h_id)) {
+  num <- h_id[i]
+
+  if (is.na(num)){
+    logical_hypothesis_3[i] = FALSE
+    h_tracker[i] <- -1
+
+  } else if (num %in% h_tracker) {
+    logical_hypothesis_3[i] = FALSE
+    h_tracker[i] <- -1
+
+  } else {
+    logical_hypothesis_3[i] = TRUE
+    h_tracker[i] <- num
+
+  }
+}
+
+## Drop duplicates and non-hypotheses
+h_statements <- h_statements[logical_hypothesis_3]
+
+h_statements
+```
+
+
+## Extract Hypothesis Numbers after possible duplicates dropped
+```{r}
+h_id <- h_statements %>%
+  stringr::str_extract("hypo (.*?):") %>%
+  stringr::str_remove_all("hypo ") %>%
+  stringr::str_remove_all(":") 
+
+h_id
+```
+
+
+## Create Output Dataframe Columns
+```{r}
+# Save current state for causality classification input
+hypothesis_causality <- h_statements
+
+# Drop ~Hypo #:~ for entity extraction input
+hypothesis_entity <- gsub(".*: ","", h_statements)
+```
+
+## Apply Fasttext Model
+skipped for now
+
+## Create Output Dataframe
+```{r}
+
+# Create Dataframe with hypothesis number and hypothesis
+df_hypothesis <- data.frame(
+  h_id,
+  hypothesis_entity,
+  hypothesis_causality,
+  stringsAsFactors = FALSE
+)
+
+df_hypothesis
+```
+
+## Modify Output Dataframe
+```{r}
+  # Rename and add Hypothesis Number
+  df_hypothesis <- df_hypothesis %>%
+    dplyr::rename(
+      hypothesis = hypothesis_entity
+    ) %>%
+    dplyr::mutate(
+      h_id = paste0("h_", h_id)
+    ) %>%
+    dplyr::select(h_id, hypothesis, hypothesis_causality)
+
+  df_hypothesis
+```
+

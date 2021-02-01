@@ -1,0 +1,117 @@
+---
+title: "Walkthrough - Entity Extraction"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+
+## Assisting Functions
+```{r}
+#' Inspect Text String
+inspect <- function(x, m = 100, span = 20) {
+  n = m + span - 1
+  x[m:n]
+}
+```
+
+## Regex
+```{r}
+regex_hypo_marker <- "<split>hypo (.*?):"
+```
+
+
+# Preceding Steps
+## Process Text
+```{r}
+input_path <- pdf_paths[1]
+input_path
+
+text_processed.v <- process_text(input_path)
+
+# inspect(text_processed.v, m = 180)
+```
+
+## Extract Hypothesis
+```{r}
+hypothesis_df <- hypothesis_extraction(text_processed.v, apply_model = FALSE)
+
+# hypothesis_df
+```
+
+# Output Table - For Reference
+```{r}
+CausalityExtraction(input_path)
+```
+
+
+# Extract Entities
+## Select Hypothesis Input
+The overall process works on a vector of hypothesis statements, but executes on a individual level, which is then vectorized. To see the individual steps, we will select a single hypothesis and analyze.
+```{r}
+row_num <- 3
+hypothesis <- hypothesis_df %>% slice(row_num) %>% pull(hypothesis)
+hypothesis
+```
+## Generate entity class predictions
+```{r}
+pred_classes <- gen_entity_class(hypothesis)
+pred_classes
+
+index_entities <- gen_entity_class_index(pred_classes)
+index_entities
+```
+
+## Verify both entities detected
+```{r}
+both_entity_present = FALSE
+if (
+  !(purrr::is_empty(index_entities[[1]])) &
+  !(purrr::is_empty(index_entities[[2]]))
+) {
+  both_entity_present = TRUE
+}
+both_entity_present
+```
+## Trim Overlapping Entities
+```{r}
+if (both_entity_present) {
+  index_entities <- trim_overlapping_entities(index_entities)
+}
+
+index_entities
+```
+
+## Remove Outliers
+```{r}
+index_entities <- trim_outlier_indexes(index_entities)
+index_entities
+```
+
+## Convert Indexes to Text
+```{r}
+entity_text_output <- index_to_entity(hypothesis, index_entities)
+as.data.frame(entity_text_output)
+```
