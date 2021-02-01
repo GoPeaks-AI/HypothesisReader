@@ -8,59 +8,11 @@ regex_ip <- "(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})"
 ## Identify Parenthesis
 regex_parens <- "\\(([^()]+)\\)"
 
-## Identify Hypothesis Formats
-regex_hypo <- c(
-  "h[0-9]{1,3}[a-zA-Z]\\:",
-  "H[0-9]{1,3}[a-zA-Z]\\:",
-  "h[0-9]{1,3}[a-zA-Z]\\.",
-  "H[0-9]{1,3}[a-zA-Z]\\.",
-  "h[0-9]{1,3}[a-zA-Z]",
-  "H[0-9]{1,3}[a-zA-Z]",
-  "hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-  "hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-  "hypothesis [0-9]{1,3}[a-zA-Z]",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]",
-  "h[0-9]{1,3}\\:",
-  "H[0-9]{1,3}\\:",
-  "h[0-9]{1,3}\\.",
-  "H[0-9]{1,3}\\.",
-  "h[0-9]{1,3}",
-  "H[0-9]{1,3}",
-  "hypothesis [0-9]{1,3}\\:",
-  "Hypothesis [0-9]{1,3}\\:",
-  "hypothesis [0-9]{1,3}\\.",
-  "Hypothesis [0-9]{1,3}\\.",
-  "hypothesis [0-9]{1,3}",
-  "Hypothesis [0-9]{1,3}"
-  )
-
-regex_proposition <- c(
-  "p[0-9]{1,3}[a-zA-Z]\\:",
-  "P[0-9]{1,3}[a-zA-Z]\\:",
-  "p[0-9]{1,3}[a-zA-Z]\\.",
-  "P[0-9]{1,3}[a-zA-Z]\\.",
-  "p[0-9]{1,3}[a-zA-Z]",
-  "P[0-9]{1,3}[a-zA-Z]",
-  "proposition [0-9]{1,3}[a-zA-Z]\\:",
-  "Proposition [0-9]{1,3}[a-zA-Z]\\:",
-  "proposition [0-9]{1,3}[a-zA-Z]\\.",
-  "Proposition [0-9]{1,3}[a-zA-Z]\\.",
-  "proposition [0-9]{1,3}[a-zA-Z]",
-  "Proposition [0-9]{1,3}[a-zA-Z]",
-  "p[0-9]{1,3}\\:",
-  "P[0-9]{1,3}\\:",
-  "p[0-9]{1,3}\\.",
-  "P[0-9]{1,3}\\.",
-  "p[0-9]{1,3}",
-  "P[0-9]{1,3}",
-  "proposition [0-9]{1,3}\\:",
-  "Proposition [0-9]{1,3}\\:",
-  "proposition [0-9]{1,3}\\.",
-  "Proposition [0-9]{1,3}\\.",
-  "proposition [0-9]{1,3}",
-  "Proposition [0-9]{1,3}"
+## Identify Hypothesis/Proposition Formats
+regex_standardize <- paste(
+  "(h|p|hypothesis|proposition)(\\s*)",
+  "([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\s*)(\\:|\\.)?",
+  sep = ""
 )
 
 ## Identify Numbers
@@ -217,50 +169,96 @@ concat_hypen_vector <- function(input_vector){
   output_vector
 }
 
-#' Standardize hypothesis format
+
+#' Reduce hypothesis/proposition to id
 #'
-#' The following function searches for a hypothesis in each character vector
-#' element. Hypotheses of different formats are identified based on a
-#' provided vector of regex strings. All identified hypotheses are converted to
-#' a standard format.
+#' The following function reduces a hypothesis or proposition label to its
+#' number/id
 #'
 #' @param input_string input string of text
-#' @param regex_hypothesis_string regex identifying hypothesis formats
+#' @noRd
+#'
+
+reduce_to_id <- Vectorize(
+  function(input_string) {
+
+    # Drop unnecessary text
+    processed_string <- input_string %>%
+      stringr::str_remove_all(
+        pattern = " ") %>%
+      stringr::str_remove_all(
+        pattern = "hypothesis") %>%
+      stringr::str_remove_all(
+        pattern = "proposition") %>%
+      stringr::str_remove_all(
+        pattern = ":") %>%
+      stringr::str_remove_all(
+        pattern = "\\.")
+
+    # Remove leading h if present
+    processed_string <- ifelse(
+      test = substr(
+        x     = processed_string,
+        start = 1,
+        stop  = 1) == "h",
+      yes = substr(
+        x     = processed_string,
+        start = 2,
+        stop  = nchar(processed_string)
+      ),
+      no = processed_string
+      )
+
+    # Remove leading p if present
+    output_string_string <- ifelse(
+      test = substr(
+        x     = processed_string,
+        start = 1,
+        stop  = 1) == "p",
+      yes = substr(
+        x     = processed_string,
+        start = 2,
+        stop  = nchar(processed_string)
+      ),
+      no = processed_string
+    )
+
+    output_string_string
+  }
+)
+
+
+#' Standardize hypothesis/proposition format
+#'
+#' The following function searches for a hypothesis or proposition in a
+#' variety of formats.
+#'
+#' @param input_string input string of text
 #' @noRd
 
-standardize_hypothesis <- Vectorize(
-  function(input_string, regex_hypothesis_string){
+standardize_hypothesis_proposition <- Vectorize(
+  function(input_string){
 
     # Extract identified value
     extract_phrase <- stringr::str_extract(
       string  = input_string,
-      pattern = regex_hypothesis_string
+      pattern = regex_standardize
     )
 
     # Check if hypothesis detected
     if (!is.na(extract_phrase)){
 
-      # # Extract hypothesis number
-      # extact_number <- stringr::str_extract(
-      #   string  = extract_phrase,
-      #   pattern = regex_return_num
-      # )
-
       # Extract hypothesis number
-      extract_term <- extract_phrase %>%
-        stringr::str_split(pattern = " ")
-
-      extract_number <- extract_term[[1]][2]
+      extract_number <- reduce_to_id(extract_phrase)
 
       # Create new string
-      replacement_string <- paste0("<split>Hypo ", extract_number, ": ")
+      standardized_string <- paste0("<split>hypo ", extract_number, ": ")
 
       # Replace hypothesis with new value
       output_string <- stringr::str_replace(
         string      = input_string,
         pattern     = extract_phrase,
-        # pattern     = regex_hypothesis_string,
-        replacement = replacement_string
+        replacement = standardized_string
       )
 
     } else {
@@ -272,6 +270,7 @@ standardize_hypothesis <- Vectorize(
 
   }
 )
+
 
 #' Remove periods directly after standard hypothesis format
 #'
@@ -287,7 +286,7 @@ remove_period <- Vectorize(
   function(input_string){
 
     # Regex identifies hypothesis with trailing period
-    regex_hypo_marker_w_period <- "<split>Hypo (.*?):\\s?."
+    regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s?."
 
     # Extract identified value
     extract_phrase <- stringr::str_extract(
@@ -335,7 +334,7 @@ break_out_hypothesis_tags <- function(input.v) {
 
   # Initialize
   output.list <- vector(mode = "list", length = length(input.v))
-  regex_hypo_marker <- "<split>Hypo (.*?):"
+  regex_hypo_marker <- "<split>hypo (.*?):"
 
   # Iterate through all input sentences
   for (i in seq_along(input.v)) {
@@ -445,6 +444,10 @@ process_text <- function(input_path){
     processing_text <- processing_text[1:index-1]
   }
 
+  # Normalize Case -------------------------------------------------------------
+  ## Set everything to lowercase
+  processing_text <- tolower(processing_text)
+
   # Numbers and Symbols --------------------------------------------------------
   ## Drop lines with only numbers or symbols
   processing_text <- remove_if_detect(
@@ -536,35 +539,9 @@ process_text <- function(input_path){
 
   # Standardize Hypothesis/Propositions-----------------------------------------
   ## Hypothesis
-  ### Generate regex
-  regex_hypo_str <- gen_regex(
-    input_string = regex_hypo,
-    match        = "partial"
+  processing_text <- standardize_hypothesis_proposition(
+    input_string  = processing_text
   )
-
-  processing_text <- standardize_hypothesis(
-    input_string            = processing_text,
-    regex_hypothesis_string = regex_hypo_str
-  )
-
-  ## Drop object names
-  processing_text <- unname(processing_text)
-
-  ## Propositions
-  ### Generate regex identify hypotheses
-  regex_prop_str <- gen_regex(
-    input_string = regex_proposition,
-    match        = "partial"
-  )
-
-  processing_text <- standardize_hypothesis(
-    input_string            = processing_text,
-    regex_hypothesis_string = regex_prop_str
-  )
-
-  ## Drop object names
-  processing_text <- unname(processing_text)
-
 
   # Remove trailing period for standardizes hypothesis tags
   processing_text <- remove_period(
@@ -623,7 +600,7 @@ process_text <- function(input_path){
     logical_method = "inverse"
   )
 
-  # Break Out Sentences With Multiple Hypothesis Tags --------------------------
+  # Break out sentences with multiple hypothesis tags --------------------------
   processing_text = break_out_hypothesis_tags(input.v = processing_text)
 
   # Misc Text Actions ----------------------------------------------------------
@@ -646,8 +623,6 @@ process_text <- function(input_path){
     replacement = ":"
   )
 
-  ## Normalize Case
-  processing_text <- tolower(processing_text)
 
   processing_text
 }

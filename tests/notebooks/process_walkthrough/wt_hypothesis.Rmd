@@ -46,11 +46,11 @@ regex_hypo_marker <- "<split>hypo (.*?):"
 # Preceding Steps
 ## Process Text
 ```{r}
-input_path <- pdf_paths[5]
+input_path <- pdf_paths[6]
 input_path
 input_text <- process_text(input_path)
 
-inspect(input_text, m = 180)
+inspect(input_text, m = 150)
 ```
 
 # Extract Hypothesis

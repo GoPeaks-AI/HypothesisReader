@@ -66,68 +66,13 @@ regex_ip <- "(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})"
 ## Identify Parenthesis
 regex_parens <- "\\(([^()]+)\\)"
 
-## Identify Hypothesis Formats
-regex_hypo <- c(
-  "h[0-9]{1,3}[a-zA-Z]\\:",
-  "H[0-9]{1,3}[a-zA-Z]\\:",
-  "h[0-9]{1,3}[a-zA-Z]\\.",
-  "H[0-9]{1,3}[a-zA-Z]\\.",
-  "h[0-9]{1,3}[a-zA-Z]",
-  "H[0-9]{1,3}[a-zA-Z]",
-  "hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]\\:",
-  "hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]\\.",
-  "hypothesis [0-9]{1,3}[a-zA-Z]",
-  "Hypothesis [0-9]{1,3}[a-zA-Z]",
-  "h[0-9]{1,3}\\:",
-  "H[0-9]{1,3}\\:",
-  "h[0-9]{1,3}\\.",
-  "H[0-9]{1,3}\\.",
-  "h[0-9]{1,3}",
-  "H[0-9]{1,3}",
-  "hypothesis [0-9]{1,3}\\:",
-  "Hypothesis [0-9]{1,3}\\:",
-  "hypothesis [0-9]{1,3}\\.",
-  "Hypothesis [0-9]{1,3}\\.",
-  "hypothesis [0-9]{1,3}",
-  "Hypothesis [0-9]{1,3}"
-  )
-
-regex_proposition <- c(
-  "p[0-9]{1,3}[a-zA-Z]\\:",
-  "P[0-9]{1,3}[a-zA-Z]\\:",
-  "p[0-9]{1,3}[a-zA-Z]\\.",
-  "P[0-9]{1,3}[a-zA-Z]\\.",
-  "p[0-9]{1,3}[a-zA-Z]",
-  "P[0-9]{1,3}[a-zA-Z]",
-  "proposition [0-9]{1,3}[a-zA-Z]\\:",
-  "Proposition [0-9]{1,3}[a-zA-Z]\\:",
-  "proposition [0-9]{1,3}[a-zA-Z]\\.",
-  "Proposition [0-9]{1,3}[a-zA-Z]\\.",
-  "proposition [0-9]{1,3}[a-zA-Z]",
-  "Proposition [0-9]{1,3}[a-zA-Z]",
-  "p[0-9]{1,3}\\:",
-  "P[0-9]{1,3}\\:",
-  "p[0-9]{1,3}\\.",
-  "P[0-9]{1,3}\\.",
-  "p[0-9]{1,3}",
-  "P[0-9]{1,3}",
-  "proposition [0-9]{1,3}\\:",
-  "Proposition [0-9]{1,3}\\:",
-  "proposition [0-9]{1,3}\\.",
-  "Proposition [0-9]{1,3}\\.",
-  "proposition [0-9]{1,3}",
-  "Proposition [0-9]{1,3}"
-)
-
 ## Identify Numbers
 regex_return_num <- "(\\d)+"
 ```
 
 # Process Data
 ```{r}
-input_path <- pdf_paths[5]
+input_path <- pdf_paths[6]
 input_path
 input_text <- pdfminer$extract_text(input_path)
 ```
@@ -141,7 +86,7 @@ processing_text <- input_text %>%
 
 processing_text[100:120]
 ```
-## Step - Remove from References/Bibliography
+## Remove from References/Bibliography
 ```{r}
 ## Remove Anything From References / Bibliography to End
 ## Define Sections
@@ -165,7 +110,14 @@ if (any(logical_section)){
 }
 ```
 
-# Step - Remove Patterns
+## Normalize Case 
+```{r}
+# Normalize Case -------------------------------------------------------------
+## Set everything to lowercase
+processing_text <- tolower(processing_text)
+```
+
+## Remove Patterns
 ```{r}
 # ## Remove Elements Which Match Removal Patterns
 # processing_text <- processing_text[!processing_text %in% removal_patterns]
@@ -173,7 +125,7 @@ if (any(logical_section)){
 # inspect()
 ```
 
-## Step - Drop Line W/ Only Numbers or Symbols
+## Drop Line W/ Only Numbers or Symbols
 ```{r}
 ## Drop lines with only numbers or symbols
 processing_text <- remove_if_detect(
@@ -184,7 +136,7 @@ processing_text <- remove_if_detect(
 
 ```
 
-## Step - Drop Vectors With Length 1 or Less
+## Drop Vectors With Length 1 or Less
 ```{r}
 ## Drop elements with length of 1 or less
 logical_length <- nchar(processing_text) > 1
@@ -194,7 +146,7 @@ processing_text <- processing_text[logical_length]
 processing_text <- processing_text[!is.na(processing_text)]
 ```
 
-## Step - Remove Months
+## Remove Months
 ```{r}
 processing_text <- remove_if_detect(
   input_vector  = processing_text,
@@ -206,7 +158,7 @@ processing_text <- remove_if_detect(
 processing_text <- processing_text[!is.na(processing_text)]
 ```
 
-## Step - Concatenate Hyphens
+## Concatenate Hyphens
 ```{r}
 ## Concatenate Adjacent Elements If Initial Element Ends With Hyphen
 processing_text <- concat_hypen_vector(processing_text)
@@ -284,47 +236,128 @@ processing_text <- remove_if_detect(
   logical_method = "inverse"
 )
 
-inspect(x = processing_text, m = 425, span = 10)
+inspect(x = processing_text, m = 208, span = 5)
 ```
-## Standardize Hypothesis
+## Standardize Hypothesis / Proposition
 ```{r}
-## Generate regex identify hypotheses
-regex_hypo_str <- gen_regex(
-  input_string = regex_hypo,
-  match        = "partial"
+# Standardize Hypothesis/Propositions-----------------------------------------
+## Hypothesis
+processing_text <- standardize_hypothesis_proposition(
+  input_string  = processing_text
 )
 
-processing_text <- standardize_hypothesis(
-  input_string            = processing_text,
-  regex_hypothesis_string = regex_hypo_str
+# Remove trailing period for standardizes hypothesis tags
+processing_text <- remove_period(
+  input_string = processing_text
 )
 
 ## Drop object names
 processing_text <- unname(processing_text)
 
-inspect(x = processing_text, m = 375, span = 10)
+inspect(x = processing_text, m = 208, span = 5)
+```
+### Step-By-Step
+#### Extract Phrase
+```{r}
+regex_hypo_condensed <- c(
+  "(h|p|hypothesis|proposition)(\\s*)([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\:|\\.)?"
+)
+
+regex_standardize <- paste(
+  "(h|p|hypothesis|proposition)(\\s*)",
+  "([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\s*)(\\:|\\.)?", 
+  sep = ""
+)
+
+input.v_test <- c(
+  "h1b: managing foreign entrepreneurs negatively affect firm performance relative to hired local",
+  "proposition 1: this is a proposition",
+  "hypothesis 2a: this is a hypothesis",
+  "proposition3: this is a proposition",
+  "hypothesis4b: this is a hypothesis",
+  "proposition5. this is a proposition",
+  "hypothesis6b. this is a hypothesis",
+  "proposition7 this is a proposition",
+  "hypothesis8b this is a hypothesis",
+  "h9b: this is a hypothesis",
+  "p 5 this is a proposition",
+  "p 6: this is a proposition",
+  "hypothesis6b. this is a hypothesis",
+  "hypothesis4b: this is a hypothesis",
+  "proposition7 this is a proposition",
+  "hypothesis8b this is a hypothesis",
+  "hypothesis 4: this is a hypothesis",
+  "no hypothesis or proposition"
+)
+
+
+extract_phrase <- stringr::str_extract(
+    string  = input.v_test,
+    pattern = regex_hypo_condensed
+  )
+
+extract_phrase
 ```
 
-## Standardize Proposition
+
+#### Drop Hypothesis ID if Alphanumeric Version Appeared Earlier
+Drop 4 if 4a was already identified.
+
 ```{r}
-## Generate regex identify hypotheses
-regex_prop_str <- gen_regex(
-  input_string = regex_proposition,
-  match        = "partial"
-)
-
-processing_text <- standardize_hypothesis(
-  input_string            = processing_text,
-  regex_hypothesis_string = regex_prop_str
-)
-
-## Drop object names
-processing_text <- unname(processing_text)
-
-inspect(x = processing_text, m = 420, span = 20)
+# # extract_phrase_3
+# 
+# regex_return_num <- "(\\d)+"
+# total_len <- length(extract_phrase_3)
+# h_id_num.v <- stringr::str_extract(
+#   string = extract_phrase_3, 
+#   pattern = regex_return_num
+#   )
+# extract_phrase_4 <- extract_phrase_3
+# 
+# for (i in seq_along(extract_phrase_3)) {
+#   
+#   h_id_num <- h_id_num.v[i]
+#   # print(h_id_num)
+#   search.v <- extract_phrase_4[(i+1):total_len]
+#   # print(search.v)
+#   h_id_num_exact <- paste("\\b", h_id_num, "\\b", sep = "")
+#   # print(h_id_num_exact)
+#   detect <- stringr::str_detect(search.v, h_id_num_exact)
+#   # print(detect)
+#   detect_index <- which(detect == TRUE)
+#   for (j in detect_index){
+#     k <- i + j
+#     # print(k)
+#     extract_phrase_4[k] = NA
+#   }
+#   # print("")
+#   
+# }
 ```
 
 ## Remove period next to hypothesis marker
+```{r}
+
+input_string <- processing_text[210]
+
+# Regex identifies hypothesis with trailing period
+regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s?."
+
+# Extract identified value
+extract_phrase <- stringr::str_extract(
+  string  = input_string,
+  pattern = regex_hypo_marker_w_period
+)
+
+# Remove trailing period
+output_string <- stringr::str_replace(
+  string      = input_string,
+  pattern     = ":\\s?.",
+  replacement = ":"
+)
+```
+
+
 ```{r}
 processing_text <- remove_period(
   input_string = processing_text
@@ -333,9 +366,8 @@ processing_text <- remove_period(
 ## Drop object names
 processing_text <- unname(processing_text)
 
-inspect(x = processing_text, m = 420, span = 20)
+inspect(x = processing_text, m = 208, span = 20)
 ```
-
 
 ## Tokenize Sentences
 ```{r}
@@ -359,6 +391,8 @@ processing_text <- stringr::str_replace_all(
 )
 
 inspect(x = processing_text, m = 130, span = 10)
+
+processing_text
 
 ```
 ## tokenize Sentence - Second Pass
