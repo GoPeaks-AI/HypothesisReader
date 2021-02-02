@@ -10,10 +10,15 @@ regex_parens <- "\\(([^()]+)\\)"
 
 ## Identify Hypothesis/Proposition Formats
 regex_standardize <- paste(
-  "(h|p|hypothesis|proposition)(\\s*)",
+  "(h|p|hypothesis\\s*|proposition\\s*)",
   "([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\s*)(\\:|\\.)?",
   sep = ""
 )
+
+regex_standardize <- stringr::regex(
+  pattern     = regex_standardize,
+  ignore_case = TRUE
+  )
 
 ## Identify Numbers
 regex_return_num <- "(\\d)+"
@@ -181,9 +186,11 @@ concat_hypen_vector <- function(input_vector){
 
 reduce_to_id <- Vectorize(
   function(input_string) {
+    # Set to lower case
+    processed_string <- tolower(input_string)
 
     # Drop unnecessary text
-    processed_string <- input_string %>%
+    processed_string <- processed_string %>%
       stringr::str_remove_all(
         pattern = " ") %>%
       stringr::str_remove_all(
@@ -286,7 +293,7 @@ remove_period <- Vectorize(
   function(input_string){
 
     # Regex identifies hypothesis with trailing period
-    regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s?."
+    regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s*\\."
 
     # Extract identified value
     extract_phrase <- stringr::str_extract(
@@ -300,8 +307,8 @@ remove_period <- Vectorize(
       # Remove trailing period
       output_string <- stringr::str_replace(
         string      = input_string,
-        pattern     = ":\\s?.",
-        replacement = ":"
+        pattern     = ":\\s*\\.",
+        replacement = ": "
       )
 
     } else {
@@ -393,6 +400,50 @@ break_out_hypothesis_tags <- function(input.v) {
 }
 
 
+#' Remove periods of common abbreviations
+#'
+#' To avoid issues caused by greedy sentence tokenization, the periods of
+#' common abbreviations are removed
+#'
+#' @param input_vector input string of text
+#' @noRd
+
+remove_period_abbr <- function(input_vector){
+
+  # Define common abbreviations
+  ## Add leading space to avoid erronious replacements
+  common_abbr <- c(
+    " e.g.",
+    " i.e.",
+    " etc.",
+    " et al.",
+    " ibid.",
+    " Ph.D.",
+    " Q.E.D.",
+    " q.e.d."
+  )
+
+  output_vector <- input_vector
+
+  for (abbr in common_abbr) {
+    abbr_wo_period <- stringr::str_remove_all(
+      string = abbr,
+      pattern = "\\."
+      )
+
+    output_vector <- stringr::str_replace_all(
+      string      = output_vector,
+      pattern     = abbr,
+      replacement = abbr_wo_period
+    )
+  }
+
+  output_vector
+
+  }
+
+
+
 #' Process PDF text
 #'
 #' Wrapper function. Executes all steps in the process flow converting raw
@@ -419,23 +470,22 @@ process_text <- function(input_path){
     stringr::str_split(pattern = "\n") %>%
     unlist()
 
+  # Whitespace -----------------------------------------------------------------
+  # Trim excess - outside and inside strings
+  processing_text <- stringr::str_trim(string = processing_text)
+  processing_text <- stringr::str_squish(string = processing_text)
+
   # References / Bibliography --------------------------------------------------
   ## Remove any text in DF document which occurs after the Reference/
   ## Bibliography, if one exists.
-  ### Define PDF sections labels
-  section_key <- c("References", "Bibliography",
-                   "REFERENCES", "BIBIOGRAPHY")
-
-  ### Convert to regex
-  regex_section <- gen_regex(
-    input_string = section_key,
-    match        = "exact"
-  )
-
   ### Return Logical Vector
-  logical_section <- stringr::str_detect(
-    string  = processing_text,
-    pattern = regex_section)
+  logical_section <- ifelse(
+    test = (
+      tolower(processing_text) == "references" |
+      tolower(processing_text) == "bibliography"
+    ),
+    yes  = TRUE,
+    no   = FALSE)
 
   ### Drop elements After first instance of Reference or Bibliography is
   ### identified.
@@ -443,10 +493,6 @@ process_text <- function(input_path){
     index <- min(which(logical_section == TRUE))
     processing_text <- processing_text[1:index-1]
   }
-
-  # Normalize Case -------------------------------------------------------------
-  ## Set everything to lowercase
-  processing_text <- tolower(processing_text)
 
   # Numbers and Symbols --------------------------------------------------------
   ## Drop lines with only numbers or symbols
@@ -537,6 +583,9 @@ process_text <- function(input_path){
     logical_method = "inverse"
   )
 
+  # Remove Periods From Common Abbreviations
+  processing_text <- remove_period_abbr(processing_text)
+
   # Standardize Hypothesis/Propositions-----------------------------------------
   ## Hypothesis
   processing_text <- standardize_hypothesis_proposition(
@@ -584,6 +633,10 @@ process_text <- function(input_path){
     replacement = " "
   )
 
+  # Normalize Case -------------------------------------------------------------
+  ## Set everything to lowercase
+  processing_text <- tolower(processing_text)
+
   # Downloading (Second Time) --------------------------------------------------
   ## Remove elements which contain terms related to downloading files
   processing_text <- remove_if_detect(
@@ -622,7 +675,6 @@ process_text <- function(input_path){
     pattern     = ": \\.",
     replacement = ":"
   )
-
 
   processing_text
 }

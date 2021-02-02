@@ -91,6 +91,58 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
   output_hypothesis
 }
 
+#' Reduce to unique hypothesis labels
+#'
+#' Reduces the list of identified hypotheses to unique labels. This also
+#' includes dropping any numeric hypothesis label where an alphanumeric label
+#' with the same number has appeared earlier in the document, i.e.: If
+#' Hypothesis 1 appears after Hypothesis 1a, Hypothesis 1 is removed
+#'
+#' @param hypothesis_labels Vector of identified hypothesis labels
+
+unique_hypothesis_labels <- function(hypothesis_labels) {
+
+  regex_return_num <- "(\\d)+"
+
+  n_hypothesis_labels <- length(hypothesis_labels)
+
+  hypothesis_numbers <- stringr::str_extract(
+    string = hypothesis_labels,
+    pattern = regex_return_num
+  )
+
+  # Initialize Output Label
+  hypothesis_labels_output <- hypothesis_labels
+
+  for (i in seq_along(h_match_num_unq)) {
+
+    h_num <- hypothesis_numbers[i]
+
+    # Extract vector to search
+    search.v <- hypothesis_labels_output[(i+1):n_hypothesis_labels]
+
+    # Create regex - exact match
+    h_num_exact <- paste("\\b", h_num, "\\b", sep = "")
+
+    # Detect if number exists
+    detect <- stringr::str_detect(search.v, h_num_exact)
+
+    # Determine vector index where true
+    detect_index <- which(detect == TRUE)
+
+    for (j in detect_index){
+      k <- i + j
+
+      hypothesis_labels_output[k] = NA
+    }
+
+  }
+  # Return non-NA values
+  hypothesis_labels_output[!is.na(hypothesis_labels_output)]
+
+}
+
+
 
 #' Extract hypothesis statements
 #'
@@ -123,6 +175,10 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
 
   # Drop NA
   h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
+
+  # Drop hypothesis if alphanumeric version appears before numeric
+  # i.e.: Drop Hypothesis 1 if Hypothesis 1a appears earlier
+  h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
 
   # Determine vector index of initial hypothesis statements
   h_initial <- c()

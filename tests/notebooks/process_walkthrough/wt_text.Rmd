@@ -84,37 +84,39 @@ processing_text <- input_text %>%
   stringr::str_split(pattern = "\n") %>% # Tika
   unlist()
 
-processing_text[100:120]
+inspect(x = processing_text, m = 465, span = 12)
 ```
+## Trim Whitespace
+```{r}
+processing_text <- stringr::str_trim(string = processing_text)
+processing_text <- stringr::str_squish(string = processing_text)
+
+inspect(x = processing_text, m = 465)
+```
+
 ## Remove from References/Bibliography
 ```{r}
 ## Remove Anything From References / Bibliography to End
 ## Define Sections
-section_key <- c("References", "Bibliography",
-                 "REFERENCES", "BIBIOGRAPHY")
-
-### Convert to regex
-regex_section <- gen_regex(
-  input_string = section_key,
-  match        = "exact"
-)
 
 ### Return Logical Vector
-logical_section <- stringr::str_detect(
-  string  = processing_text,
-  pattern = regex_section)
+logical_section <- ifelse(
+  test = (
+    tolower(processing_text) == "references" | 
+    tolower(processing_text) == "bibliography"
+    ),
+  yes  = TRUE,
+  no   = FALSE)
+
 
 if (any(logical_section)){
   index <- min(which(logical_section == TRUE))
   processing_text <- processing_text[1:index-1]
 }
-```
 
-## Normalize Case 
-```{r}
-# Normalize Case -------------------------------------------------------------
-## Set everything to lowercase
-processing_text <- tolower(processing_text)
+processing_text[1610:1611]
+
+length(processing_text)
 ```
 
 ## Remove Patterns
@@ -134,6 +136,8 @@ processing_text <- remove_if_detect(
   logical_method = "inverse"
 )
 
+inspect(x = processing_text, m = 220)
+
 ```
 
 ## Drop Vectors With Length 1 or Less
@@ -144,6 +148,8 @@ processing_text <- processing_text[logical_length]
 
 # Drop any NA elements
 processing_text <- processing_text[!is.na(processing_text)]
+
+inspect(x = processing_text, m = 220)
 ```
 
 ## Remove Months
@@ -156,12 +162,16 @@ processing_text <- remove_if_detect(
 
 ## Drop Any NA Elements
 processing_text <- processing_text[!is.na(processing_text)]
+
+inspect(x = processing_text, m = 220)
 ```
 
 ## Concatenate Hyphens
 ```{r}
 ## Concatenate Adjacent Elements If Initial Element Ends With Hyphen
 processing_text <- concat_hypen_vector(processing_text)
+
+inspect(x = processing_text, m = 210)
 ```
 
 ## Downloaded Files
@@ -176,6 +186,7 @@ processing_text <- remove_if_detect(
   location      = "any"
 )
 
+inspect(x = processing_text, m = 210)
 ```
 
 ## IP Addresses
@@ -188,6 +199,7 @@ processing_text <- remove_if_detect(
   location     = "any"
 )
 
+inspect(x = processing_text, m = 210)
 ```
 
 ## Parenthesis
@@ -224,6 +236,8 @@ processing_text <- processing_text[processing_text!=""]
 
 ## Drop NA elements
 processing_text <- processing_text[!is.na(processing_text)]
+
+inspect(x = processing_text, m = 210)
 ```
 
 ## Symbols and Numbers
@@ -236,8 +250,9 @@ processing_text <- remove_if_detect(
   logical_method = "inverse"
 )
 
-inspect(x = processing_text, m = 208, span = 5)
+inspect(x = processing_text, m = 210)
 ```
+
 ## Standardize Hypothesis / Proposition
 ```{r}
 # Standardize Hypothesis/Propositions-----------------------------------------
@@ -246,6 +261,13 @@ processing_text <- standardize_hypothesis_proposition(
   input_string  = processing_text
 )
 
+## Drop object names
+processing_text <- unname(processing_text)
+
+inspect(x = processing_text, m = 210)
+```
+## Remove Trailing Period
+```{r}
 # Remove trailing period for standardizes hypothesis tags
 processing_text <- remove_period(
   input_string = processing_text
@@ -254,123 +276,62 @@ processing_text <- remove_period(
 ## Drop object names
 processing_text <- unname(processing_text)
 
-inspect(x = processing_text, m = 208, span = 5)
+inspect(x = processing_text, m = 210)
 ```
-### Step-By-Step
-#### Extract Phrase
+
+
+## Remove Periods From Common Abbreviations
 ```{r}
-regex_hypo_condensed <- c(
-  "(h|p|hypothesis|proposition)(\\s*)([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\:|\\.)?"
+input_vector <- c(
+   "managers in order to live in personally attractive regions and may be willing to substitute some",
+   "managers in order to live in personally attractive regions et al.",
+   "managers in order to live in personally attractive regions et al. i.e. e.g."  
 )
 
-regex_standardize <- paste(
-  "(h|p|hypothesis|proposition)(\\s*)",
-  "([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\s*)(\\:|\\.)?", 
-  sep = ""
-)
-
-input.v_test <- c(
-  "h1b: managing foreign entrepreneurs negatively affect firm performance relative to hired local",
-  "proposition 1: this is a proposition",
-  "hypothesis 2a: this is a hypothesis",
-  "proposition3: this is a proposition",
-  "hypothesis4b: this is a hypothesis",
-  "proposition5. this is a proposition",
-  "hypothesis6b. this is a hypothesis",
-  "proposition7 this is a proposition",
-  "hypothesis8b this is a hypothesis",
-  "h9b: this is a hypothesis",
-  "p 5 this is a proposition",
-  "p 6: this is a proposition",
-  "hypothesis6b. this is a hypothesis",
-  "hypothesis4b: this is a hypothesis",
-  "proposition7 this is a proposition",
-  "hypothesis8b this is a hypothesis",
-  "hypothesis 4: this is a hypothesis",
-  "no hypothesis or proposition"
-)
-
-
-extract_phrase <- stringr::str_extract(
-    string  = input.v_test,
-    pattern = regex_hypo_condensed
+# inspect(x = processing_text, m = 205)
+  common_abbr <- c(
+    " e.g.",
+    " i.e.",
+    " etc.",
+    " et al.",
+    " ibid.",
+    " Ph.D.",
+    " Q.E.D.",
+    " q.e.d."
   )
 
-extract_phrase
+  output_vector <- input_vector
+
+  for (abbr in common_abbr) {
+    abbr_wo_period <- stringr::str_remove_all(
+      string = abbr,
+      pattern = "\\."
+      )
+
+    print(abbr_wo_period)
+    output_vector <- stringr::str_replace_all(
+      string      = output_vector,
+      pattern     = abbr,
+      replacement = abbr_wo_period
+    )
+    # print(output_vector)
+  }
+
+  output_vector
 ```
 
-
-#### Drop Hypothesis ID if Alphanumeric Version Appeared Earlier
-Drop 4 if 4a was already identified.
-
 ```{r}
-# # extract_phrase_3
-# 
-# regex_return_num <- "(\\d)+"
-# total_len <- length(extract_phrase_3)
-# h_id_num.v <- stringr::str_extract(
-#   string = extract_phrase_3, 
-#   pattern = regex_return_num
-#   )
-# extract_phrase_4 <- extract_phrase_3
-# 
-# for (i in seq_along(extract_phrase_3)) {
-#   
-#   h_id_num <- h_id_num.v[i]
-#   # print(h_id_num)
-#   search.v <- extract_phrase_4[(i+1):total_len]
-#   # print(search.v)
-#   h_id_num_exact <- paste("\\b", h_id_num, "\\b", sep = "")
-#   # print(h_id_num_exact)
-#   detect <- stringr::str_detect(search.v, h_id_num_exact)
-#   # print(detect)
-#   detect_index <- which(detect == TRUE)
-#   for (j in detect_index){
-#     k <- i + j
-#     # print(k)
-#     extract_phrase_4[k] = NA
-#   }
-#   # print("")
-#   
-# }
+
+inspect(x = processing_text, m = 205)
+processing_text <- remove_period_abbr(processing_text)
+
+inspect(x = processing_text, m = 205)
 ```
 
-## Remove period next to hypothesis marker
+## Tokenize Sentence - First Pass (Tokenizers)
 ```{r}
+inspect(x = processing_text, m = 130, span = 10)
 
-input_string <- processing_text[210]
-
-# Regex identifies hypothesis with trailing period
-regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s?."
-
-# Extract identified value
-extract_phrase <- stringr::str_extract(
-  string  = input_string,
-  pattern = regex_hypo_marker_w_period
-)
-
-# Remove trailing period
-output_string <- stringr::str_replace(
-  string      = input_string,
-  pattern     = ":\\s?.",
-  replacement = ":"
-)
-```
-
-
-```{r}
-processing_text <- remove_period(
-  input_string = processing_text
-)
-
-## Drop object names
-processing_text <- unname(processing_text)
-
-inspect(x = processing_text, m = 208, span = 20)
-```
-
-## Tokenize Sentences
-```{r}
 # Tokenize Sentences ---------------------------------------------------------
 ## Convert Vector Elements into Sentences
 processing_text <- stringr::str_c(
@@ -378,10 +339,14 @@ processing_text <- stringr::str_c(
   collapse = " "
 )
 
+# processing_text
+
 processing_text <- tokenizers::tokenize_sentences(
   processing_text,
   strip_punct = FALSE) %>%
   unlist()
+
+# processing_text
 
 ## Replace double spaces with single
 processing_text <- stringr::str_replace_all(
@@ -390,12 +355,11 @@ processing_text <- stringr::str_replace_all(
   replacement = " "
 )
 
-inspect(x = processing_text, m = 130, span = 10)
-
-processing_text
+inspect(x = processing_text, m = 90, span = 10)
 
 ```
-## tokenize Sentence - Second Pass
+
+## Tokenize Sentence - Second Pass (Stringr)
 ```{r}
 processing_text <- stringr::str_split(
   string  = processing_text, 
@@ -405,9 +369,14 @@ processing_text <- stringr::str_split(
 ## Drop empty vectors
 processing_text <- processing_text[processing_text!=""]
 
-inspect(x = processing_text, m = 150, span = 10)
+inspect(x = processing_text, m = 90, span = 20)
 ```
-
+## Normalize Case 
+```{r}
+# Normalize Case -------------------------------------------------------------
+## Set everything to lowercase
+processing_text <- tolower(processing_text)
+```
 
 ## Downloading (Second Time)
 ```{r}
@@ -465,115 +434,20 @@ inspect(x = processing_text, m = 90 , span = 20)
   )
   
 
-inspect(x = processing_text, m = 150, span = 20)
-```
-
-# Component Function Testing
-## Standardize Hypothesis
-We need to adjust this function so that alpha numeric hypothesis numbers are grabbed.
-### Inputs
-```{r}
-input_string_alphanum <- paste(
-  "15, we would be unable to reject Hypothesis 1b"
-)
-
-input_string_no_hypo <- "This is a dummy"
-
-input_string_num <- "This is Hypothesis 1 a purely numeric hypothesis"
-
-
-## Generate regex identify hypotheses
-regex_hypothesis_string <- gen_regex(
-  input_string = regex_hypo,
-  match        = "partial"
-)
-```
-
-### Extract Hypothesis Phrases
-```{r}
-extract_phrase <- stringr::str_extract(
-  string  = input_string_alphanum,
-  pattern = regex_hypothesis_string
-)
-
-extract_phrase
-```
-
-### Extract Hypothesis Number
-#### Existing
-```{r}
-
-extact_number <- stringr::str_extract(
-  string  = extract_phrase,
-  pattern = regex_return_num
-)
-extact_number
-```
-
-#### Update able to capture alpha numerics
-```{r}
-regex_return_alphanum <- '/\b(?![0-9]+\b)(?![a-z]+\b)[0-9a-z]+\b/i'
-
-extact_number <- stringr::str_match(
-  string  = extract_phrase,
-  pattern = regex_return_alphanum
-)
-extact_number <- extract_phrase %>% stringr::str_split(pattern = " ")
-
-extact_number <- extact_number[[1]][2]
+inspect(x = processing_text, m = 150, span = 10)
 ```
 
 ```{r}
-replacement_string <- paste0("<split>Hypo ", extact_number, ": ")
-replacement_string
-    # Replace hypothesis with new value
-    output_string <- stringr::str_replace(
-      string      = input_string_alphanum,
-      pattern     = regex_hypothesis_string,
-      replacement = replacement_string
-    )
-    
-    output_string
+length(processing_text)
+processing_text[length(processing_text)]
 ```
 
-
+# Final Function
 ```{r}
-standardize_hypothesis <- Vectorize(
-  function(input_string, regex_hypothesis_string){
+input_text <- process_text(input_path)
 
-    # Extract identified value
-    extract_phrase <- stringr::str_extract(
-      string  = input_string,
-      pattern = regex_hypothesis_string
-    )
+length(input_text)
 
-    # Check if hypothesis detected
-    if (!is.na(extract_phrase)){
-
-      # Extract hypothesis number
-      extact_number <- stringr::str_extract(
-        string  = extract_phrase,
-        pattern = regex_return_num
-      )
-
-      # Create new string
-      replacement_string <- paste0("<split>Hypo ", extact_number, ": ")
-
-      # Replace hypothesis with new value
-      output_string <- stringr::str_replace(
-        string      = input_string,
-        pattern     = regex_hypothesis_string,
-        replacement = replacement_string
-      )
-
-    } else {
-      output_string <- input_string
-
-    }
-
-    output_string
-
-  }
-)
+processing_text[length(input_text)]
 ```
 

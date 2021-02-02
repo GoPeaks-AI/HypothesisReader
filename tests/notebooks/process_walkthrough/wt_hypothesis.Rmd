@@ -54,7 +54,6 @@ inspect(input_text, m = 150)
 ```
 
 # Extract Hypothesis
-
 ```{r}
 # Identify lines with hypothesis pattern
 h_match <- input_text %>%
@@ -89,6 +88,13 @@ h_match_num_unq <- setdiff(h_match_num_unq, error_hypothesis)
 h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
 
 h_match_num_unq
+```
+
+#### Reduce to unique hypothesis
+Drop 4 if 4a was already identified.
+
+```{r}
+h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
 ```
 
 ## Determine Vector Index of Initial Hypthesis Instance
