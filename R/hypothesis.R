@@ -101,45 +101,97 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
 #' @param hypothesis_labels Vector of identified hypothesis labels
 
 unique_hypothesis_labels <- function(hypothesis_labels) {
+  h_id <- hypothesis <- NULL
 
   regex_return_num <- "(\\d)+"
-
-  n_hypothesis_labels <- length(hypothesis_labels)
 
   hypothesis_numbers <- stringr::str_extract(
     string = hypothesis_labels,
     pattern = regex_return_num
   )
 
-  # Initialize Output Label
-  hypothesis_labels_output <- hypothesis_labels
+  # Check if hypothesis label contains letters
+  hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
 
-  for (i in seq_along(h_match_num_unq)) {
+  # Initialize
+  h_num_output <- c()
+  h_label_output <- c()
 
+  for (i in seq_along(hypothesis_labels_alpha)) {
+
+    # Extract values at index i
+    h_label_alpha <- hypothesis_labels_alpha[i]
     h_num <- hypothesis_numbers[i]
+    h_label <- hypothesis_labels[i]
 
-    # Extract vector to search
-    search.v <- hypothesis_labels_output[(i+1):n_hypothesis_labels]
+    # If label contains a letter
+    if (h_label_alpha) {
 
-    # Create regex - exact match
-    h_num_exact <- paste("\\b", h_num, "\\b", sep = "")
+      # Check if number already used in label
+      if (!(h_num %in% h_label_output)) {
 
-    # Detect if number exists
-    detect <- stringr::str_detect(search.v, h_num_exact)
+        h_label_output <- c(h_label_output, h_label)
+        h_num_output <- c(h_num_output, h_num)
 
-    # Determine vector index where true
-    detect_index <- which(detect == TRUE)
+      }
 
-    for (j in detect_index){
-      k <- i + j
+    } else {
 
-      hypothesis_labels_output[k] = NA
+      if (!(h_num %in% h_num_output)) {
+
+        h_label_output <- c(h_label_output, h_label)
+        h_num_output <- c(h_num_output, h_num)
+
+      }
     }
 
-  }
-  # Return non-NA values
-  hypothesis_labels_output[!is.na(hypothesis_labels_output)]
+    h_label_output <- stringr::str_sort(x = h_label_output)
 
+  }
+
+  # Return
+  h_label_output
+
+}
+
+
+#' Drop empty hypothesis sentences
+#'
+#' Removes sentences in input text which only contain the hypothesis tag. No
+#' other text is contained in that sentence.
+#'
+#' @param hypothesis_index Vector listing indexes of each hypothesis
+#' @param unique_hypothesis_label Vector of unique hypothesis labels
+#' @param input_text Processed input text, one sentence per vector element
+
+drop_empty_hypothesis <- function(
+  hypothesis_index,
+  unique_hypothesis_label,
+  input_text
+) {
+  # Determine index of hypothesis sentences
+  h_index <- which(hypothesis_index %in% unique_hypothesis_label)
+
+  # Extract hypothesis lines
+  extract_hp <- input_text[h_index]
+
+  # Remove hypothesis tag and white space
+  extract_hp <- extract_hp %>%
+    stringr::str_remove_all(pattern = regex_hypo_marker) %>%
+    stringr::str_remove_all(pattern = " ")
+
+  # Remove hypothesis from index vector if post-processed statement is empty
+  for (i in seq_along(h_index)) {
+
+    if (extract_hp[i] == "") {
+
+      j = h_index[i]
+      hypothesis_index[j] = NA
+
+      }
+  }
+
+  hypothesis_index
 }
 
 
@@ -179,6 +231,13 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   # Drop hypothesis if alphanumeric version appears before numeric
   # i.e.: Drop Hypothesis 1 if Hypothesis 1a appears earlier
   h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
+
+  # Drop Hypothesis lines with hypothesis tag only
+  h_match_num <- drop_empty_hypothesis(
+    hypothesis_index        = h_match_num,
+    unique_hypothesis_label = h_match_num_unq,
+    input_text              = input_text
+    )
 
   # Determine vector index of initial hypothesis statements
   h_initial <- c()

@@ -35,15 +35,6 @@ The following imports functions defined in the sourced R scripts.
 # }
 ```
 
-## Data
-```{r}
-folder_path <- "./../../../inst/extdata/sample_documents/"
-pdf_paths <- list.files(recursive = FALSE, 
-                       path = folder_path, 
-                       pattern = ".pdf", 
-                       full.names = TRUE)
-print(pdf_paths)
-```
 
 ## Assisting Functions
 ```{r}
@@ -70,28 +61,41 @@ regex_parens <- "\\(([^()]+)\\)"
 regex_return_num <- "(\\d)+"
 ```
 
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+
 # Process Data
 ```{r}
-input_path <- pdf_paths[6]
+input_path <- pdf_paths[13]
 input_path
 input_text <- pdfminer$extract_text(input_path)
+
+# input_text
 ```
 
 ## Step 1
 ```{r}
 processing_text <- input_text %>%
-  stringr::str_split(pattern = "\r\n") %>% # Tabulizer
-  stringr::str_split(pattern = "\n") %>% # Tika
+  stringr::str_split(pattern = "\r\n") %>% 
+  stringr::str_split(pattern = "\n") %>% 
   unlist()
 
-inspect(x = processing_text, m = 465, span = 12)
+# inspect(x = processing_text, m = 450, span = 20)
 ```
+
 ## Trim Whitespace
 ```{r}
 processing_text <- stringr::str_trim(string = processing_text)
 processing_text <- stringr::str_squish(string = processing_text)
 
-inspect(x = processing_text, m = 465)
+# inspect(x = processing_text, m = 450)
 ```
 
 ## Remove from References/Bibliography
@@ -114,8 +118,6 @@ if (any(logical_section)){
   processing_text <- processing_text[1:index-1]
 }
 
-processing_text[1610:1611]
-
 length(processing_text)
 ```
 
@@ -136,8 +138,7 @@ processing_text <- remove_if_detect(
   logical_method = "inverse"
 )
 
-inspect(x = processing_text, m = 220)
-
+# inspect(x = processing_text, m = 190)
 ```
 
 ## Drop Vectors With Length 1 or Less
@@ -149,7 +150,7 @@ processing_text <- processing_text[logical_length]
 # Drop any NA elements
 processing_text <- processing_text[!is.na(processing_text)]
 
-inspect(x = processing_text, m = 220)
+# inspect(x = processing_text, m = 190)
 ```
 
 ## Remove Months
@@ -163,7 +164,7 @@ processing_text <- remove_if_detect(
 ## Drop Any NA Elements
 processing_text <- processing_text[!is.na(processing_text)]
 
-inspect(x = processing_text, m = 220)
+# inspect(x = processing_text, m = 190)
 ```
 
 ## Concatenate Hyphens
@@ -171,7 +172,7 @@ inspect(x = processing_text, m = 220)
 ## Concatenate Adjacent Elements If Initial Element Ends With Hyphen
 processing_text <- concat_hypen_vector(processing_text)
 
-inspect(x = processing_text, m = 210)
+# inspect(x = processing_text, m = 185)
 ```
 
 ## Downloaded Files
@@ -186,7 +187,7 @@ processing_text <- remove_if_detect(
   location      = "any"
 )
 
-inspect(x = processing_text, m = 210)
+# inspect(x = processing_text, m = 185)
 ```
 
 ## IP Addresses
@@ -199,7 +200,7 @@ processing_text <- remove_if_detect(
   location     = "any"
 )
 
-inspect(x = processing_text, m = 210)
+# inspect(x = processing_text, m = 185)
 ```
 
 ## Parenthesis
@@ -237,7 +238,7 @@ processing_text <- processing_text[processing_text!=""]
 ## Drop NA elements
 processing_text <- processing_text[!is.na(processing_text)]
 
-inspect(x = processing_text, m = 210)
+# inspect(x = processing_text, m = 185)
 ```
 
 ## Symbols and Numbers
@@ -250,7 +251,193 @@ processing_text <- remove_if_detect(
   logical_method = "inverse"
 )
 
-inspect(x = processing_text, m = 210)
+inspect(x = processing_text, m = 25)
+```
+
+## Remove Periods Common Abbreviations
+### Walkthrough
+```{r}
+
+regex_common_abbr <- c(
+  "e[.]g[.]",
+  "et al[.]",
+  "i[.]e[.]",
+  "etc[.]",
+  "ibid[.]",
+  " Ph[.]D[.]",
+  " Q[.]E[.]D[.]",
+  " q[.]e[.]d[.]"
+)
+
+
+test_input <- c(
+  "This sentence uses e.g. dummy text",
+  "This sentence uses (e.g. dummy text",
+  "This sentence uses etc.) dummy",
+  "This sentence uses et al. dummy",
+  "This sentence uses (et al. dummy",
+  "This sentence uses et al.). dummy"
+)
+
+test_output <- test_input
+for (abbr in regex_common_abbr) {
+  
+  abbr_no_per <- abbr %>% 
+    stringr::str_remove_all(pattern = "\\[") %>% 
+    stringr::str_remove_all(pattern = "\\.") %>% 
+    stringr::str_remove_all(pattern = "\\]") 
+    
+  test_output <- stringr::str_replace_all(
+    string = test_output,
+    pattern = abbr, 
+    replacement = abbr_no_per
+  )
+}
+test_output
+```
+
+### Function
+```{r}
+processing_text <- remove_period_abbr(processing_text)
+
+inspect(x = processing_text, m = 25, span = 20)
+```
+
+## Fix Common Error Traps
+```{r}
+processing_text <- fix_common_error_traps(processing_text)
+
+inspect(x = processing_text, m = 410, span = 20)
+```
+
+## Detect Duplicate Tags
+### Walkthrough
+```{r}
+input.v <- c(
+  "Hypothesis 1a. Text",
+  "Hypothesis1b: Text",
+  "Hypothesis1c Text",
+  "Hypothesis 2a (H2a). Text",
+  "Hypothesis 2b; (H2b). Text",
+  "Hypothesis 3 H3a. Text",
+  "Hypothesis 3 H3a. Text",
+  "Hypothesis 4: H4a: Text",
+  "group 3a"
+)
+
+
+regex_hypo_marker <- "<split>hypo (.*?):"
+
+regex_hp_standardize <- stringr::regex("
+  \\(?                          # Open parens, optional
+  \\b                           # Word boundary
+  (h|p|hypothesis|proposition)  # Possible hy/pr word format
+  \\s*                          # Space(s), optional
+  [0-9]{1,3}                    # Number, one to three digits
+  [a-zA-Z]?                     # Letter, optional
+  \\)?                          # Close parens, optional
+  \\s*                          # Space(s), optional
+  [:,.;]?                       # Closing punctuation, optional
+  \\s*                          # Space(s), optional
+  ",
+  ignore_case = TRUE, 
+  comments = TRUE
+  )
+
+
+# stringr::str_extract_all(string = input.v, pattern = regex_hp_standardize)
+```
+
+```{r}
+input.str <- input.v[4]
+
+h_num <- stringr::str_count(
+    string  = input.str,
+    pattern = regex_hp_standardize
+  )
+
+h_num
+
+if (h_num > 1) {
+  extract_hp <- stringr::str_extract_all(
+    string  = input.str,
+    pattern = regex_hp_standardize
+  )
+  
+  extract_hp <- extract_hp %>% unlist()
+  
+} else {
+  extract_hp <- stringr::str_extract(
+    string  = input.str,
+    pattern = regex_hp_standardize
+  )
+}
+
+output.str <- input.str
+output.str
+extract_hp <- stringr::str_trim(string = extract_hp)
+
+## Escape characters
+extract_hp_escape <- extract_hp %>% 
+  stringr::str_replace_all(
+    pattern = "\\(", 
+    replacement = "[(]"
+    ) %>%
+  stringr::str_replace_all(
+    pattern = "\\)", 
+    replacement = "[)]"
+    ) %>%
+  stringr::str_replace_all(
+    pattern = "\\.", 
+    replacement = "[.]"
+    ) 
+```
+
+```{r}
+if (!is.na(extract_hp[1])) {
+  
+  for (extracted in extract_hp_escape) {
+    # Remove whitespace
+    
+    
+    # Extract hypothesis number
+    extract_number <- reduce_to_id(extracted)
+  
+    # Create new string
+    standardized_string <- paste0("<split>hypo ", extract_number, ": ")
+    print(standardized_string)
+    print(output.str)
+    print(paste("Extracted: ", extracted ))
+
+    output.str <- stringr::str_replace(
+      string      = output.str,
+      pattern     = extracted,
+      replacement = standardized_string
+    )
+    print(output.str)
+
+    cat("\n")
+  }
+}
+
+output.str
+```
+
+```{r}
+test.str <- "<replace> (H2a). Text"
+extracted_escape <- extracted %>% 
+  stringr::str_replace_all(pattern = "\\(", replacement = "[(]") %>%
+  stringr::str_replace_all(pattern = "\\)", replacement = "[)]") %>%
+  stringr::str_replace_all(pattern = "\\.", replacement = "[.]") 
+extracted_escape
+
+    output.str <- stringr::str_replace(
+      string      = test.str,
+      pattern     = extracted_escape,
+      replacement = "<replace>"
+    )
+    
+    output.str
 ```
 
 ## Standardize Hypothesis / Proposition
@@ -258,80 +445,131 @@ inspect(x = processing_text, m = 210)
 # Standardize Hypothesis/Propositions-----------------------------------------
 ## Hypothesis
 processing_text <- standardize_hypothesis_proposition(
-  input_string  = processing_text
+  input.str = processing_text
 )
 
 ## Drop object names
 processing_text <- unname(processing_text)
 
-inspect(x = processing_text, m = 210)
+inspect(x = processing_text, m = 410)
 ```
+
+## Standardize Hypothesis - Non-numbered
+```{r}
+## Test if any hypothesis standardized
+n_hypothesis_test <- sum(
+  stringr::str_count(
+    string = processing_text,
+    pattern = "<split>hypo"
+    )
+  )
+
+## If no hypothesis detected, attempt to standardize hypothesis/proposition
+## formats without number/labels
+if (n_hypothesis_test == 0) {
+  processing_text <- standardize_hypothesis_proposition_no_num(
+    input_vector  = processing_text
+  )
+}
+```
+
+## Replace Double Hypothesis Tags
+### Walkthrough
+```{r}
+input.str <- processing_text[419]
+
+# Drop Whitespace
+input.str <- stringr::str_squish(input.str)
+
+## Detect Double Tag
+regex_single_tag <- "<split>hypo (.*?):"
+
+regex_double_tag <- paste(
+  regex_single_tag, 
+  "\\s*",
+  regex_single_tag,
+  sep = ""
+)
+
+## Extract Double Tag
+extract_double_tag <- stringr::str_extract(
+  string = input.str, 
+  pattern = regex_double_tag
+  )
+
+extract_double_tag
+
+## Extract Single tags
+extract_single_tag <- stringr::str_extract_all(
+  string = extract_double_tag, 
+  pattern = regex_single_tag
+  )
+
+extract_single_tag <- extract_single_tag %>% unlist()
+
+extract_single_tag
+
+## Extract ta number/label
+
+extract_tag_labels <- extract_single_tag %>% 
+    stringr::str_remove_all(
+      pattern = "<split>hypo ") %>%
+    stringr::str_remove_all(
+      pattern = ":") 
+
+extract_tag_labels
+
+## Check if both labels are the same
+n_unique_labels <- length(unique(extract_tag_labels))
+
+n_unique_labels
+
+## If both labels are the same, remove one
+
+output.str <- input.str %>% 
+  stringr::str_replace_all(
+    pattern = extract_double_tag, 
+    replacement =  extract_single_tag[1]
+    )
+
+output.str
+
+```
+
+```{r}
+input.str
+extract_double_tag
+extract_single_tag
+b <- stringr::str_replace_all(
+  string = input.str, 
+  pattern = extract_double_tag, 
+  replacement =  extract_single_tag[1]
+  )
+b
+```
+
+### Function
+```{r}
+processing_text <- remove_duplicate_tag(processing_text) %>% unname()
+
+inspect(x = processing_text, m = 410)
+```
+
 ## Remove Trailing Period
 ```{r}
 # Remove trailing period for standardizes hypothesis tags
 processing_text <- remove_period(
-  input_string = processing_text
+  input.str = processing_text
 )
 
 ## Drop object names
 processing_text <- unname(processing_text)
 
-inspect(x = processing_text, m = 210)
-```
-
-
-## Remove Periods From Common Abbreviations
-```{r}
-input_vector <- c(
-   "managers in order to live in personally attractive regions and may be willing to substitute some",
-   "managers in order to live in personally attractive regions et al.",
-   "managers in order to live in personally attractive regions et al. i.e. e.g."  
-)
-
-# inspect(x = processing_text, m = 205)
-  common_abbr <- c(
-    " e.g.",
-    " i.e.",
-    " etc.",
-    " et al.",
-    " ibid.",
-    " Ph.D.",
-    " Q.E.D.",
-    " q.e.d."
-  )
-
-  output_vector <- input_vector
-
-  for (abbr in common_abbr) {
-    abbr_wo_period <- stringr::str_remove_all(
-      string = abbr,
-      pattern = "\\."
-      )
-
-    print(abbr_wo_period)
-    output_vector <- stringr::str_replace_all(
-      string      = output_vector,
-      pattern     = abbr,
-      replacement = abbr_wo_period
-    )
-    # print(output_vector)
-  }
-
-  output_vector
-```
-
-```{r}
-
-inspect(x = processing_text, m = 205)
-processing_text <- remove_period_abbr(processing_text)
-
-inspect(x = processing_text, m = 205)
+inspect(x = processing_text, m = 410, span = 20)
 ```
 
 ## Tokenize Sentence - First Pass (Tokenizers)
 ```{r}
-inspect(x = processing_text, m = 130, span = 10)
-
 # Tokenize Sentences ---------------------------------------------------------
 ## Convert Vector Elements into Sentences
 processing_text <- stringr::str_c(
@@ -355,7 +593,7 @@ processing_text <- stringr::str_replace_all(
   replacement = " "
 )
 
-inspect(x = processing_text, m = 90, span = 10)
+inspect(x = processing_text, m = 235, span = 10)
 
 ```
 
@@ -369,8 +607,9 @@ processing_text <- stringr::str_split(
 ## Drop empty vectors
 processing_text <- processing_text[processing_text!=""]
 
-inspect(x = processing_text, m = 90, span = 20)
+inspect(x = processing_text, m = 260, span = 10)
 ```
+
 ## Normalize Case 
 ```{r}
 # Normalize Case -------------------------------------------------------------
@@ -388,7 +627,7 @@ processing_text <- tolower(processing_text)
     location      = "any"
   )
 
-inspect(x = processing_text, m = 150, span = 10)
+inspect(x = processing_text, m = 260, span = 10)
 ```
 
 ## Symbols and Numbers (Second Time)
@@ -401,14 +640,14 @@ inspect(x = processing_text, m = 150, span = 10)
     logical_method = "inverse"
   )
 
-inspect(x = processing_text, m = 90 , span = 10)
+# inspect(x = processing_text, m = 90 , span = 10)
 ```
 
 ## Split Sentences with Multiple Hypothesis Tags
 ```{r}
 processing_text <- break_out_hypothesis_tags(processing_text)
 
-inspect(x = processing_text, m = 90 , span = 20)
+# inspect(x = processing_text, m = 90 , span = 20)
 ```
 
 ## Misc Text Replacement
@@ -434,20 +673,13 @@ inspect(x = processing_text, m = 90 , span = 20)
   )
   
 
-inspect(x = processing_text, m = 150, span = 10)
-```
-
-```{r}
-length(processing_text)
-processing_text[length(processing_text)]
+inspect(x = processing_text, m = 250, span = 10)
 ```
 
 # Final Function
 ```{r}
 input_text <- process_text(input_path)
 
-length(input_text)
-
-processing_text[length(input_text)]
+inspect(x = input_text, m = 250, span = 10)
 ```
 

@@ -18,16 +18,6 @@ knitr::opts_chunk$set(echo = TRUE)
   )
 ```
 
-## Data
-```{r}
-folder_path <- "./../../../inst/extdata/sample_documents/"
-pdf_paths <- list.files(recursive = FALSE, 
-                       path = folder_path, 
-                       pattern = ".pdf", 
-                       full.names = TRUE)
-print(pdf_paths)
-```
-
 ## Assisting Functions
 ```{r}
 #' Inspect Text String
@@ -42,18 +32,29 @@ inspect <- function(x, m = 100, span = 20) {
 regex_hypo_marker <- "<split>hypo (.*?):"
 ```
 
-
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
 # Preceding Steps
 ## Process Text
 ```{r}
-input_path <- pdf_paths[6]
+n = 10
+input_path <- pdf_paths[n]
 input_path
+cat("\n\n")
 input_text <- process_text(input_path)
 
-inspect(input_text, m = 150)
+inspect(input_text, m = 215, span = 20)
 ```
 
 # Extract Hypothesis
+## Identify lines with hypothesis pattern
 ```{r}
 # Identify lines with hypothesis pattern
 h_match <- input_text %>%
@@ -70,6 +71,11 @@ h_match <- input_text %>%
 h_match_num <- h_match[,2]
 
 h_match_num
+```
+
+### Inspect
+```{r}
+inspect(input_text, m = 186, span = 10)
 ```
 
 ## Identify unique hypothesis numbers
@@ -94,8 +100,79 @@ h_match_num_unq
 Drop 4 if 4a was already identified.
 
 ```{r}
-h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
+  hypothesis_labels <- h_match_num_unq
+  
+  # hypothesis_labels <- c("1", "2a", "2b", "3a", "4", "2", "3", "3b", "1b")  
+  # hypothesis_labels
+
+  # Check if hypothesis label contains letters
+  hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
+  # hypothesis_labels_alpha
+  
+  # Extract Numbers
+  regex_return_num <- "(\\d)+"
+
+  hypothesis_numbers <- stringr::str_extract(
+    string = hypothesis_labels,
+    pattern = regex_return_num
+  )
+
+  h_num_output <- c()
+  h_label_output <- c()
+  
+  # hypothesis_labels_alpha <- hypothesis_labels_alpha[1:3]
+
+  for (i in seq_along(hypothesis_labels_alpha)) {
+    
+    h_label_alpha <- hypothesis_labels_alpha[i]
+    h_num <- hypothesis_numbers[i]
+    h_label <- hypothesis_labels[i]
+ 
+    # If label contains a letter
+    if (h_label_alpha) {
+      
+      # Check if number already used in label
+      if (!(h_num %in% h_label_output)) {
+        
+        h_label_output <- c(h_label_output, h_label)
+        h_num_output <- c(h_num_output, h_num)
+      
+        }
+      
+    } else {
+      
+      if (!(h_num %in% h_num_output)) {
+        
+        h_label_output <- c(h_label_output, h_label)
+        h_num_output <- c(h_num_output, h_num)
+      
+        }
+    }
+  }
+  h_num_output
+  h_label_output
+
+  stringr::str_sort(x = h_label_output)
+  
 ```
+
+```{r}
+h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
+h_match_num_unq
+```
+
+## Drop Empty Hypothesis Lines
+```{r}
+# Drop Hypothesis lines with hypothesis tag only
+h_match_num <- drop_empty_hypothesis(
+  hypothesis_index        = h_match_num,
+  unique_hypothesis_label = h_match_num_unq,
+  input_text              = input_text
+  )
+
+h_match_num
+```
+
 
 ## Determine Vector Index of Initial Hypthesis Instance
 ```{r}
@@ -115,7 +192,7 @@ h_statements
 
 ## Split Statements on Hypothesis Indicator
 ```{r}
-# Split Statements On Indicator (Defined in Processing) ----------------------
+# Split Statements On Indicator (Defined in Processing) ------------------------
 ## Define
 split_indicator <- "<split>"
 
@@ -205,7 +282,27 @@ hypothesis_entity <- gsub(".*: ","", h_statements)
 ```
 
 ## Apply Fasttext Model
-skipped for now
+
+```{r}
+apply_model = FALSE
+
+# Filter with hypothesis classification model
+if (apply_model) {
+
+  # Verify hypothesis statements are available
+  if (!(purrr::is_empty(hypothesis_entity))) {
+
+    output_hypothesis <- apply_fasttext(
+      hypothesis_entity,
+      hypothesis_causality
+    )
+
+    hypothesis_causality <- output_hypothesis[[1]]
+    hypothesis_entity <- output_hypothesis[[2]]
+
+  }
+}
+```
 
 ## Create Output Dataframe
 ```{r}

@@ -9,16 +9,34 @@ regex_ip <- "(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})\\.(?:[\\d]{1,3})"
 regex_parens <- "\\(([^()]+)\\)"
 
 ## Identify Hypothesis/Proposition Formats
-regex_standardize <- paste(
-  "(h|p|hypothesis\\s*|proposition\\s*)",
-  "([0-9]{1,3}[a-zA-Z]|[0-9]{1,3})(\\s*)(\\:|\\.)?",
-  sep = ""
+regex_hp_standardize <- stringr::regex("
+  \\(?                                  # Open parens, optional
+  \\b                                   # Word boundary
+  (h|p|hypothesis\\s*|proposition\\s*)  # Acceptable label format
+  [0-9]{1,3}                            # Number, one to three digits
+  [a-zA-Z]?                             # Letter, optional
+  \\)?                                  # Close parens, optional
+  \\s*                                  # Space(s), optional
+  [:,.;]?                               # Closing punctuation, optional
+  \\s*                                  # Space(s), optional
+  ",
+                                       ignore_case = TRUE,
+                                       comments = TRUE
 )
 
-regex_standardize <- stringr::regex(
-  pattern     = regex_standardize,
-  ignore_case = TRUE
-  )
+## Identify hypothesis/proposition without number/label
+regex_hypothesis_no_num <- "^(Hypothesis|Proposition)\\s*:"
+
+## Single Hypothesis Tag
+regex_single_tag <- "<split>hypo (.*?):"
+
+## Duplicate Hypothesis Tag
+regex_double_tag <- paste(
+  regex_single_tag,
+  "\\s*",
+  regex_single_tag,
+  sep = ""
+)
 
 ## Identify Numbers
 regex_return_num <- "(\\d)+"
@@ -52,7 +70,7 @@ get_path_pdf2text <- function() {
 #'  @param match Flag indicating if a match should be "exact" or "partial.
 #'   Defaults to "partial".
 #'  @param logical_method Flag indicating if the text removed from the
-#'   [input_string] should be the regex. If "inverse" is provided as flag, the
+#'   [input.str] should be the regex. If "inverse" is provided as flag, the
 #'   text removed will be everything BUT the regex.
 #'
 #' @noRd
@@ -67,7 +85,7 @@ remove_if_detect <- function(input_vector,
   # Generate regex input based on string if regex is not provided
   if (is.null(regex)){
     regex <- gen_regex(
-      input_string = remove_string,
+      input.str = remove_string,
       match        = match)
   }
 
@@ -180,14 +198,14 @@ concat_hypen_vector <- function(input_vector){
 #' The following function reduces a hypothesis or proposition label to its
 #' number/id
 #'
-#' @param input_string input string of text
+#' @param input.str input string of text
 #' @noRd
 #'
 
-reduce_to_id <- Vectorize(
-  function(input_string) {
+reduce_to_id <- Vectorize(USE.NAMES = FALSE, FUN =
+  function(input.str) {
     # Set to lower case
-    processed_string <- tolower(input_string)
+    processed_string <- tolower(input.str)
 
     # Drop unnecessary text
     processed_string <- processed_string %>%
@@ -198,9 +216,10 @@ reduce_to_id <- Vectorize(
       stringr::str_remove_all(
         pattern = "proposition") %>%
       stringr::str_remove_all(
-        pattern = ":") %>%
-      stringr::str_remove_all(
-        pattern = "\\.")
+        pattern = stringr::regex(
+          pattern = "[:punct:]"
+          )
+        )
 
     # Remove leading h if present
     processed_string <- ifelse(
@@ -238,46 +257,205 @@ reduce_to_id <- Vectorize(
 #' Standardize hypothesis/proposition format
 #'
 #' The following function searches for a hypothesis or proposition in a
-#' variety of formats.
+#' variety of formats and returns a standardized tag.
 #'
-#' @param input_string input string of text
+#' @param input.str input string of text
 #' @noRd
 
-standardize_hypothesis_proposition <- Vectorize(
-  function(input_string){
+standardize_hypothesis_proposition <- Vectorize(USE.NAMES = FALSE, FUN =
+  function(input.str){
 
-    # Extract identified value
-    extract_phrase <- stringr::str_extract(
-      string  = input_string,
-      pattern = regex_standardize
+    # Count how many hypothesis/propositions are in string
+    h_count <- stringr::str_count(
+      string  = input.str,
+      pattern = regex_hp_standardize
     )
 
-    # Check if hypothesis detected
-    if (!is.na(extract_phrase)){
-
-      # Extract hypothesis number
-      extract_number <- reduce_to_id(extract_phrase)
-
-      # Create new string
-      standardized_string <- paste0("<split>hypo ", extract_number, ": ")
-
-      # Replace hypothesis with new value
-      output_string <- stringr::str_replace(
-        string      = input_string,
-        pattern     = extract_phrase,
-        replacement = standardized_string
+    # Extract each hypothesis/proposition instance, all accepted formats
+    if (h_count > 1) {
+      extract_hp <- stringr::str_extract_all(
+        string  = input.str,
+        pattern = regex_hp_standardize
       )
 
-    } else {
-      output_string <- input_string
+      extract_hp <- extract_hp %>% unlist()
 
+    } else {
+      extract_hp <- stringr::str_extract(
+        string  = input.str,
+        pattern = regex_hp_standardize
+      )
     }
 
+    # Remove whitespace
+    extract_hp <- stringr::str_trim(string = extract_hp)
+
+    ## Add escape characters to parens and period
+    extract_hp <- extract_hp %>%
+      stringr::str_replace_all(
+        pattern = "\\(",
+        replacement = "[(]"
+      ) %>%
+      stringr::str_replace_all(
+        pattern = "\\)",
+        replacement = "[)]"
+      ) %>%
+      stringr::str_replace_all(
+        pattern = "\\.",
+        replacement = "[.]"
+      )
+
+    # Initialize output string
+    output_string <- input.str
+
+    # Check if hypothesis detected
+    if (!is.na(extract_hp[1])){
+
+      # Iterate through all hypothesis/proposition instances
+      for (extract_phrase in extract_hp) {
+
+        # Extract hypothesis number/label
+        extract_number <- reduce_to_id(extract_phrase)
+
+        # Create standardized replacement string
+        standardized_string <- paste0("<split>hypo ", extract_number, ": ")
+
+        # Replace hypothesis with new value
+        output_string <- stringr::str_replace(
+          string      = output_string,
+          pattern     = extract_phrase,
+          replacement = standardized_string
+        )
+        }
+      }
+
+    # Return value
     output_string
 
   }
 )
 
+
+#' Standardize hypothesis/proposition format when the hypothesis/proposition is
+#'  not numbered/labeled
+#'
+#' The following function searches for a hypothesis or proposition without a
+#' number/label and returns a hypothesis tag in the standardized form.
+#'
+#' @param input_vector input vector of text
+#' @noRd
+
+
+standardize_hypothesis_proposition_no_num <- function(input_vector) {
+
+  # Initialize
+  output_vector <- vector(
+    mode   = "character",
+    length = length(input_vector))
+
+  j = 1
+
+  # Search for hypothesis in correct format
+  for (i in seq_along(input_vector)) {
+
+    input.str <- input_vector[i]
+
+    # Test if hypothesis format is in string
+    detect_hypothesis <- stringr::str_detect(
+      string = input.str,
+      pattern = regex_hypothesis_no_num
+    )
+
+    # If hypothesis is detected, replace with standardized format
+    if (detect_hypothesis) {
+
+      standardized_string <- paste0("<split>hypo ", j, ": ")
+
+      output_string <- stringr::str_replace(
+        string      = input.str,
+        pattern     = regex_hypothesis_no_num,
+        replacement = standardized_string
+      )
+
+      output_vector[i] <- output_string
+      j = j + 1
+
+    } else {
+      output_vector[i] <- input.str
+    }
+  }
+
+  output_vector
+}
+
+
+
+#' Remove duplicate hypothesis/proposition standardized tags
+#'
+#' Removes duplicate hypothesis/proposition standardized tags where there are
+#' two tags directly next to each other.
+#'
+#' @param input.str input string of text
+#' @noRd
+
+remove_duplicate_tag <- Vectorize(USE.NAMES = FALSE, FUN =
+  function(input.str){
+
+    # Drop whitespace
+    input.str <- stringr::str_squish(input.str)
+
+    # Extract double tag
+    extract_double_tag <- stringr::str_extract(
+      string  = input.str,
+      pattern = regex_double_tag
+    )
+
+    # Execute if double tag detected
+    if (!is.na(extract_double_tag)){
+
+      # Extract single tag
+      extract_single_tag <- stringr::str_extract_all(
+        string  = extract_double_tag,
+        pattern = regex_single_tag
+      )
+
+      extract_single_tag <- extract_single_tag %>% unlist()
+
+      # Extract tag number/labels
+      extract_tag_labels <- extract_single_tag %>%
+        stringr::str_remove_all(
+          pattern = "<split>hypo "
+          ) %>%
+        stringr::str_remove_all(
+          pattern = ":"
+          )
+
+      # Determine number of unique labels/tags
+      n_unique_labels <- length(unique(extract_tag_labels))
+
+      ## If both labels are the same, remove one
+      if (n_unique_labels == 1) {
+
+        output.str <- input.str %>%
+          stringr::str_replace_all(
+            pattern     = extract_double_tag,
+            replacement = extract_single_tag[1]
+          )
+
+      } else {
+
+        output.str <- input.str
+
+      }
+    } else {
+
+      output.str <- input.str
+
+    }
+
+    output.str
+  }
+)
 
 #' Remove periods directly after standard hypothesis format
 #'
@@ -286,18 +464,18 @@ standardize_hypothesis_proposition <- Vectorize(
 #' hypothesis tag from the hypothesis content. This function identifies those
 #' cases and removes the period.
 #'
-#' @param input_string input string of text
+#' @param input.str input string of text
 #' @noRd
 
-remove_period <- Vectorize(
-  function(input_string){
+remove_period <- Vectorize(USE.NAMES = FALSE, FUN =
+  function(input.str){
 
     # Regex identifies hypothesis with trailing period
     regex_hypo_marker_w_period <- "<split>hypo (.*?):\\s*\\."
 
     # Extract identified value
     extract_phrase <- stringr::str_extract(
-      string  = input_string,
+      string  = input.str,
       pattern = regex_hypo_marker_w_period
     )
 
@@ -306,13 +484,13 @@ remove_period <- Vectorize(
 
       # Remove trailing period
       output_string <- stringr::str_replace(
-        string      = input_string,
+        string      = input.str,
         pattern     = ":\\s*\\.",
         replacement = ": "
       )
 
     } else {
-      output_string <- input_string
+      output_string <- input.str
 
     }
 
@@ -411,25 +589,24 @@ break_out_hypothesis_tags <- function(input.v) {
 remove_period_abbr <- function(input_vector){
 
   # Define common abbreviations
-  ## Add leading space to avoid erronious replacements
   common_abbr <- c(
-    " e.g.",
-    " i.e.",
-    " etc.",
-    " et al.",
-    " ibid.",
-    " Ph.D.",
-    " Q.E.D.",
-    " q.e.d."
+    "e[.]g[.]",
+    "et al[.]",
+    "i[.]e[.]",
+    "etc[.]",
+    "ibid[.]",
+    " Ph[.]D[.]",
+    " Q[.]E[.]D[.]",
+    " q[.]e[.]d[.]"
   )
 
   output_vector <- input_vector
 
   for (abbr in common_abbr) {
-    abbr_wo_period <- stringr::str_remove_all(
-      string = abbr,
-      pattern = "\\."
-      )
+    abbr_wo_period <- abbr %>%
+      stringr::str_remove_all(pattern = "\\[") %>%
+      stringr::str_remove_all(pattern = "\\.") %>%
+      stringr::str_remove_all(pattern = "\\]")
 
     output_vector <- stringr::str_replace_all(
       string      = output_vector,
@@ -442,6 +619,41 @@ remove_period_abbr <- function(input_vector){
 
   }
 
+#' Replace/Remove common issues
+#'
+#' Certain words/phrases have resulted in errors in hypothesis/proposition
+#' extraction. To avoid such errors, this function modifies these words/
+#' phrases so that they avoid being caught in the hypothesis/proposition
+#' identification steps.
+#'
+#' @param input_vector input string of text
+#' @noRd
+
+
+fix_common_error_traps <- function(input_vector){
+
+  # S&P Index
+  ## Modified to identify any number
+
+  regex_sp <- "(S&P)(\\s*)([0-9]{1,5})"
+  regex_sp <- stringr::regex(regex_sp, ignore_case = TRUE)
+
+  # Add underscore between s&p and index number
+  output_vector <- stringr::str_replace_all(
+    string = input_vector,
+    pattern = regex_sp,
+    replacement = {
+
+      index_num <- stringr::str_extract(
+        string  = input_vector,
+        pattern = "(\\d)+")
+
+      paste("s&p_", index_num, sep = "")
+
+    }
+  )
+    output_vector
+}
 
 
 #' Process PDF text
@@ -583,23 +795,44 @@ process_text <- function(input_path){
     logical_method = "inverse"
   )
 
-  # Remove Periods From Common Abbreviations
+  # Common Issues --------------------------------------------------------------
+  ## Remove Periods From Common Abbreviations
   processing_text <- remove_period_abbr(processing_text)
+
+  ## Adjust common error traps
+  processing_text <- fix_common_error_traps(processing_text)
 
   # Standardize Hypothesis/Propositions-----------------------------------------
   ## Hypothesis
   processing_text <- standardize_hypothesis_proposition(
-    input_string  = processing_text
+    input.str  = processing_text
+  )
+
+  ## Test if any hypothesis standardized
+  n_hypothesis_test <- sum(
+    stringr::str_count(
+      string = processing_text,
+      pattern = "<split>hypo"
+      )
+    )
+
+  ## If no hypothesis detected, attempt to standardize hypothesis/proposition
+  ## formats without number/labels
+  if (n_hypothesis_test == 0) {
+    processing_text <- standardize_hypothesis_proposition_no_num(
+      input_vector  = processing_text
+    )
+  }
+
+  ## Remove Duplicate Tags
+  processing_text <- remove_duplicate_tag(
+    input.str = processing_text
   )
 
   # Remove trailing period for standardizes hypothesis tags
   processing_text <- remove_period(
-    input_string = processing_text
+    input.str = processing_text
   )
-
-  ## Drop object names
-  processing_text <- unname(processing_text)
-
 
   # Tokenize Sentences ---------------------------------------------------------
   ## Pass 1 - Tokenizers

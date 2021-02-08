@@ -156,6 +156,11 @@ server <- function(input, output) {
       shinyjs::toggle(id="panel_no_hypothesis")
     }
   })
+#
+#   # Hide/Show no well panel
+#   shiny::observeEvent(input$file, {
+#     shinyjs::reset("panel_no_hypothesis")
+#   })
 
 
   # Display output table
