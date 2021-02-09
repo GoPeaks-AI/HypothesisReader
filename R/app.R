@@ -153,15 +153,11 @@ server <- function(input, output) {
   # Hide/Show no hypothesis detected
   shiny::observe({
     if(!(purrr::is_empty(docs_wo_hypothesis()))) {
-      shinyjs::toggle(id="panel_no_hypothesis")
+      shinyjs::show(id="panel_no_hypothesis")
+    } else {
+      shinyjs::hide(id="panel_no_hypothesis")
     }
   })
-#
-#   # Hide/Show no well panel
-#   shiny::observeEvent(input$file, {
-#     shinyjs::reset("panel_no_hypothesis")
-#   })
-
 
   # Display output table
   output$causality_extraction_table <- DT::renderDT({
@@ -205,7 +201,9 @@ server <- function(input, output) {
 
       vroom::vroom_write(
         output_table,
-        file, delim = ",")
+        file,
+        delim = ",",
+        bom   = TRUE)
     }
   )
 
