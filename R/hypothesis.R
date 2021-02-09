@@ -320,7 +320,12 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   hypothesis_causality <- h_statements
 
   # Drop ~Hypo #:~ for entity extraction input
-  hypothesis_entity <- gsub(".*: ","", h_statements)
+  regex_hypo_marker_2 <-
+  hypothesis_entity <- gsub(
+    pattern     = "hypo (.*?):\\s*",
+    replacement = "",
+    x           =  h_statements
+    )
 
   # Filter with hypothesis classification model
   if (apply_model) {
