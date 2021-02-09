@@ -1,0 +1,39 @@
+---
+title: "Walkthrough: Misc"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test miscellaneous parts of the package.
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+# Install Tika Jar
+```{r}
+
+jar <- rtika::tika_jar()
+
+jar
+is.na(jar)
+
+if (is.na(jar)) {
+  rtika::install_tika()
+}
+```
+
+
+
+

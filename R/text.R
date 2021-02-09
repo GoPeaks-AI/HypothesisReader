@@ -672,13 +672,15 @@ process_text <- function(input_path){
   # Convert --------------------------------------------------------------------
 
   ## Use PDFminer.six high level function
-  input_text <- pdfminer$extract_text(input_path)
+  # input_text <- pdfminer$extract_text(input_path)
+
+  ## rTika
+  input_text <- rtika::tika_text(input = input_path)
 
 
   # Vectorize ------------------------------------------------------------------
   ## Split text into character vector
   processing_text <- input_text %>%
-    stringr::str_split(pattern = "\r\n") %>%
     stringr::str_split(pattern = "\n") %>%
     unlist()
 

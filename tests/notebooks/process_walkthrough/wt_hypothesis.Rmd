@@ -44,13 +44,13 @@ print(pdf_paths)
 # Preceding Steps
 ## Process Text
 ```{r}
-n = 10
+n = 9
 input_path <- pdf_paths[n]
 input_path
 cat("\n\n")
 input_text <- process_text(input_path)
 
-inspect(input_text, m = 215, span = 20)
+# inspect(input_text, m = 70, span = 20)
 ```
 
 # Extract Hypothesis
@@ -75,7 +75,7 @@ h_match_num
 
 ### Inspect
 ```{r}
-inspect(input_text, m = 186, span = 10)
+inspect(input_text, m = 80, span = 10)
 ```
 
 ## Identify unique hypothesis numbers
@@ -274,15 +274,17 @@ h_id
 
 ## Create Output Dataframe Columns
 ```{r}
+regex_hypo_marker_2 <- "hypo (.*?):\\s*"
+
 # Save current state for causality classification input
 hypothesis_causality <- h_statements
 
 # Drop ~Hypo #:~ for entity extraction input
-hypothesis_entity <- gsub(".*: ","", h_statements)
+hypothesis_entity <- gsub(regex_hypo_marker_2,"", h_statements)
+hypothesis_entity
 ```
 
 ## Apply Fasttext Model
-
 ```{r}
 apply_model = FALSE
 

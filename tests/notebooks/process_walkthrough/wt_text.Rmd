@@ -73,21 +73,25 @@ print(pdf_paths)
 
 # Process Data
 ```{r}
-input_path <- pdf_paths[13]
+n = 8
+input_path <- pdf_paths[n]
 input_path
-input_text <- pdfminer$extract_text(input_path)
 
-# input_text
+# PDF Miner
+# input_text <- pdfminer$extract_text(input_path)
+
+# Tika
+input_text <- rtika::tika_text(input = input_path)
 ```
 
-## Step 1
+## Split Raw Text on Newline Characters
 ```{r}
 processing_text <- input_text %>%
-  stringr::str_split(pattern = "\r\n") %>% 
+  # stringr::str_split(pattern = "\r\n") %>% 
   stringr::str_split(pattern = "\n") %>% 
   unlist()
 
-# inspect(x = processing_text, m = 450, span = 20)
+inspect(x = processing_text, m = 561, span = 20)
 ```
 
 ## Trim Whitespace
@@ -673,7 +677,7 @@ processing_text <- break_out_hypothesis_tags(processing_text)
   )
   
 
-inspect(x = processing_text, m = 250, span = 10)
+inspect(x = processing_text, m = 150, span = 10)
 ```
 
 # Final Function
