@@ -7,66 +7,99 @@ get_path_ft_model <- function() {
 ft_model <- fastTextR::ft_load(get_path_ft_model())
 
 # REGEX Strings ---------------------------------------------------------------
-## Identify Hypo _ #:
-regex_hypo_marker <- "<split>hypo (.*?):"
+split_tag <- "<split>"
+hypothesis_tag <- "hypo (.*?):\\s*"
+hypothesis_split_tag <- paste(split_tag, hypothesis_tag, sep = "")
 
 # Functions -------------------------------------------------------------------
 
-#' Filter hypothesis statements with fastText classification model
+#' Generate fastText model input
 #'
-#' Removes hypothesis statements if not classified as hypothesis by the
-#' hypothesis classification model.
+#' Performs pre-processing steps to prepare fastText model input.
 #'
-#' @param hypothesis_entity hypothesis statements in the format for the entity
-#'  extraction step, character vector
-#' @param hypothesis_causality hypothesis statements in the format for the
-#'  causality classification step, character vector
-#'
+#' @param input_text input text for processing, character vector
 #' @noRd
 
-apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
+gen_fasttext_model_input <- function(input_text) {
   # For R CMD Checks
-  col_names <- Response <- NULL
+  output_text <-  NULL
 
-  # Verify hypothesis class with fastText model
-  ## Generate hypothesis class prediction dataframe
+  # Remove hypothesis tag
+  output_text <- gsub(
+    pattern     = hypothesis_tag,
+    replacement = "",
+    x           =  input_text
+  )
 
+  # Return output
+  output_text
+
+}
+
+
+
+#' Filter hypothesis statements with fastText classification model
+#'
+#' Removes statements if not classified as hypothesis by the
+#' hypothesis classification model.
+#'
+#' @param input_text possible hypothesis statements, character vector
+#' @noRd
+
+apply_fasttext_model <- function(input_text) {
+  # For R CMD Checks
+  col_names <- no <- Response <- yes <- NULL
+
+  # Process model input data
+  model_input <- gen_fasttext_model_input(input_text)
+
+  # Generate hypothesis predictions
   hypothesis_pred <- fastTextR::ft_predict(
     model   = ft_model,
-    newdata = hypothesis_entity,
+    newdata = model_input,
     rval    = "dense"
   ) %>%
     as.data.frame()
 
-  ## Assign prediction column names
+  # Rename columns
   col_names <- names(hypothesis_pred)
 
-  ## Drop statements which were predicted as non-hypothesis class
-  if (!("__label__0" %in% col_names)) {
+  if ("__label__1" %in% col_names) {
+    hypothesis_pred <- hypothesis_pred %>%
+      dplyr::rename(yes = "__label__1")
+  }
+
+  if ("__label__0" %in% col_names) {
+    hypothesis_pred <- hypothesis_pred %>%
+      dplyr::rename(no = "__label__0")
+  }
+
+  # Generate logical vector indicting if a vector element is a hypothesis
+
+  col_names <- names(hypothesis_pred)
+
+  ## If no column not found, all elements are hypothesis
+  if (!("no" %in% col_names)) {
     response <- vector(
       mode   = "logical",
-      length = length(hypothesis_entity)
+      length = length(model_input)
     )
 
-    for (i in seq_along(hypothesis_entity)){
-      response[i] <- TRUE
+    for (i in seq_along(model_input)) (response[i] <- TRUE)
 
-    }
-
-  } else if (!("__label__1" %in% col_names)) {
+    ## If yes column not found, all elements are not hypothesis
+  } else if (!("yes" %in% col_names)) {
     response <- vector(
       mode   = "logical",
-      length = length(hypothesis_entity))
+      length = length(model_input))
 
-    for (i in seq_along(hypothesis_entity)){
-      response[i] <- FALSE
+    for (i in seq_along(model_input)) (response[i] <- FALSE)
 
-    }
   } else {
     response <- hypothesis_pred %>%
       dplyr::mutate(
         Response = dplyr::if_else(
-          condition = col_names[1] <= col_names[2],
+          condition = yes >= no,
           true      = TRUE,
           false     = FALSE
         )
@@ -75,21 +108,10 @@ apply_fasttext <- function(hypothesis_entity, hypothesis_causality) {
 
   }
 
-  # Filter hypothesis statement vectors with logical vector
-  hypothesis_causality <- hypothesis_causality[response]
-  hypothesis_entity <- hypothesis_entity[response]
-
-  # Assign to list for output
-  output_hypothesis <- vector(
-    mode   = "list",
-    length = 2
-  )
-
-  output_hypothesis[[1]] <- hypothesis_causality
-  output_hypothesis[[2]] <- hypothesis_entity
-
-  output_hypothesis
+  # Return filtered input hypothesis statements with logical vector
+  input_text[response]
 }
+
 
 #' Reduce to unique hypothesis labels
 #'
@@ -111,16 +133,16 @@ unique_hypothesis_labels <- function(hypothesis_labels) {
   )
 
   # Check if hypothesis label contains letters
-  hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
+  logical_hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
 
   # Initialize
   h_num_output <- c()
   h_label_output <- c()
 
-  for (i in seq_along(hypothesis_labels_alpha)) {
+  for (i in seq_along(logical_hypothesis_labels_alpha)) {
 
     # Extract values at index i
-    h_label_alpha <- hypothesis_labels_alpha[i]
+    h_label_alpha <- logical_hypothesis_labels_alpha[i]
     h_num <- hypothesis_numbers[i]
     h_label <- hypothesis_labels[i]
 
@@ -155,45 +177,66 @@ unique_hypothesis_labels <- function(hypothesis_labels) {
 }
 
 
-#' Drop empty hypothesis sentences
+#' Drop hypothesis sentences with fewer than minimum token threshold
 #'
-#' Removes sentences in input text which only contain the hypothesis tag. No
-#' other text is contained in that sentence.
+#' Removes sentences that contain a hypothesis tag, and contain fewer than
+#' the minimum threshold of tokens. This is a method to assist in removing
+#' erroneous hypothesis identification.
 #'
-#' @param hypothesis_index Vector listing indexes of each hypothesis
-#' @param unique_hypothesis_label Vector of unique hypothesis labels
 #' @param input_text Processed input text, one sentence per vector element
+#' @param min_threshold Minimum threshold of tokens in a sentence.
 
-drop_empty_hypothesis <- function(
-  hypothesis_index,
-  unique_hypothesis_label,
-  input_text
+drop_hypothesis_below_min_threshold <- function(
+  input_text,
+  min_threshold = 5
 ) {
-  # Determine index of hypothesis sentences
-  h_index <- which(hypothesis_index %in% unique_hypothesis_label)
+  # For R CMD Checks
+  extract_hypothesis <- index <- n <- n_tokens <- pass <- token <- NULL
 
-  # Extract hypothesis lines
-  extract_hp <- input_text[h_index]
+  # Remove hypothesis tag and trim white space
+  extract_hypothesis <- input_text %>%
+    stringr::str_remove_all(pattern = hypothesis_tag) %>%
+    stringr::str_trim()
 
-  # Remove hypothesis tag and white space
-  extract_hp <- extract_hp %>%
-    stringr::str_remove_all(pattern = regex_hypo_marker) %>%
-    stringr::str_remove_all(pattern = " ")
+  # Create tibble and add index
+  hypothesis.tb <- dplyr::tibble(extract_hypothesis) %>%
+    dplyr::mutate(
+      index = dplyr::row_number()
+    )
 
-  # Remove hypothesis from index vector if post-processed statement is empty
-  for (i in seq_along(h_index)) {
+  # Insert dummy token for observations with zero tokens to avoid NA drop
+  hypothesis.tb <- hypothesis.tb %>%
+    dplyr::mutate(
+      extract_hypothesis = dplyr::if_else(
+        condition = extract_hypothesis == "",
+        true      = "dummy",
+        false     = extract_hypothesis
+        )
+    )
 
-    if (extract_hp[i] == "") {
+  # Generate vector of sentences with token counts above minimum threshold
+  idx_above_min_threshold <- hypothesis.tb %>%
+    tidytext::unnest_tokens(                          # Convert to tokens
+      output = token,
+      input  = extract_hypothesis
+    ) %>%
+    dplyr::group_by(index) %>%
+    dplyr::summarise(n_tokens = dplyr::n()) %>%      # Count tokens per index
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      pass = dplyr::if_else(                          # ID index pass/fail
+        condition = n_tokens > min_threshold,
+        true      = 1,
+        false     = 0
+      )
+    ) %>%
+    dplyr::filter(pass == 1) %>%                      # Filter passing index
+    dplyr::pull(index)                                # Extract as vector
 
-      j = h_index[i]
-      hypothesis_index[j] = NA
+  # Return hypothesis statements with token count greater than threshold
+  input_text[idx_above_min_threshold]
 
-      }
-  }
-
-  hypothesis_index
 }
-
 
 
 #' Extract hypothesis statements
@@ -208,14 +251,39 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   # For R CMD Checks
   h_id <- hypothesis <- NULL
 
-  # Hypothesis Extraction -----------------------------------------------------
-  # Identify lines with hypothesis pattern
-  h_match <- input_text %>%
+  # Reduce to Hypothesis Statements --------------------------------------------
+  # Split vector elements with multiple hypothesis tags
+  split_text <- stringr::str_split(
+    string  = input_text,
+    pattern = split_tag) %>%
+    unlist()
+
+  # Select vector elements which contain hypothesis tags
+  logical_hypothesis_tag <- stringr::str_detect(
+    string  = split_text,
+    pattern = hypothesis_tag
+  )
+
+  hypothesis <- split_text[logical_hypothesis_tag]
+
+  # Remove vector elements with token counts below minimum threshold
+  hypothesis <- drop_hypothesis_below_min_threshold(hypothesis)
+
+  # Filter vector elements based on hypothesis prediction model
+  if (apply_model) {
+    if (!(purrr::is_empty(hypothesis))) {
+
+      hypothesis <- apply_fasttext_model(hypothesis)
+
+    }
+  }
+
+  # Extract hypotheses label/number
+  h_match <- hypothesis %>%
     stringr::str_match(
-      pattern = regex_hypo_marker
+      pattern = hypothesis_tag
     )
 
-  # Extract hypotheses number
   h_match_num <- h_match[,2]
 
   # Identify unique hypothesis numbers
@@ -228,121 +296,44 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
   # Drop NA
   h_match_num_unq <- h_match_num_unq[!is.na(h_match_num_unq)]
 
-  # Drop hypothesis if alphanumeric version appears before numeric
-  # i.e.: Drop Hypothesis 1 if Hypothesis 1a appears earlier
+  # Determine unique hypothesis label/numbers
+  ## i.e.: Hypothesis 1 not selected if Hypothesis 1a appears earlier
   h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
 
-  # Drop Hypothesis lines with hypothesis tag only
-  h_match_num <- drop_empty_hypothesis(
-    hypothesis_index        = h_match_num,
-    unique_hypothesis_label = h_match_num_unq,
-    input_text              = input_text
-    )
 
   # Determine vector index of initial hypothesis statements
   h_initial <- c()
+
   for (i in h_match_num_unq){
-    intial_idx <- tapply(seq_along(h_match_num),
-                         h_match_num,
-                         min)[i]
+
+    intial_idx <- tapply(
+      X     = seq_along(h_match_num),
+      INDEX = h_match_num,
+      FUN   = min
+      )[i]
+
     h_initial <- c(h_initial, intial_idx)
   }
 
-  # Reduce text to only initial hypothesis instances
-  h_statements <- input_text[h_initial]
-
-  # Split Statements On Indicator (Defined in Processing) ----------------------
-  ## Define
-  split_indicator <- "<split>"
-
-  ## Split on indicator
-  h_statements <- stringr::str_split(
-    string  = h_statements,
-    pattern = split_indicator) %>%
-    unlist()
-
-  ## Detect statements which contain "Hypo"
-  logical_hypothesis_2 <- stringr::str_detect(
-    string  = h_statements,
-    pattern = "hypo"
-  )
-
-  ## Drop Statements that Do Not Include "Hypo"
-  h_statements <- h_statements[logical_hypothesis_2]
-
-  # Drop Duplicate Hypothesis Calls --------------------------------------------
-  ## Extract hypothesis number
-  h_id <- h_statements %>%
-    stringr::str_extract("hypo (.*?):") %>%
-    stringr::str_remove_all("hypo ") %>%
-    stringr::str_remove_all(":")
-
-  ## Identify Duplicate Hypothesis Numbers
-  logical_hypothesis_3 <- vector(
-    mode   = "logical",
-    length = length(h_id)
-  )
-
-  h_tracker <- vector(
-    mode   = "integer",
-    length = length(h_id)
-  )
-
-  for (i in seq_along(h_id)) {
-    num <- h_id[i]
-
-    if (is.na(num)){
-      logical_hypothesis_3[i] = FALSE
-      h_tracker[i] <- -1
-
-    } else if (num %in% h_tracker) {
-      logical_hypothesis_3[i] = FALSE
-      h_tracker[i] <- -1
-
-    } else {
-      logical_hypothesis_3[i] = TRUE
-      h_tracker[i] <- num
-
-    }
-  }
-
-  ## Drop duplicates and non-hypotheses
-  h_statements <- h_statements[logical_hypothesis_3]
+  # Reduce to only initial hypothesis instances
+  hypothesis <- hypothesis[h_initial]
 
   # Create Output Table -------------------------------------------------------
-  # Extract hypothesis ID post duplicate drops
-  h_id <- h_statements %>%
+  # Extract hypothesis label/number
+  h_id <- hypothesis %>%
     stringr::str_extract("hypo (.*?):") %>%
     stringr::str_remove_all("hypo ") %>%
     stringr::str_remove_all(":")
 
   # Save current state for causality classification input
-  hypothesis_causality <- h_statements
+  hypothesis_causality <- hypothesis
 
   # Drop ~Hypo #:~ for entity extraction input
-  regex_hypo_marker_2 <-
   hypothesis_entity <- gsub(
     pattern     = "hypo (.*?):\\s*",
     replacement = "",
-    x           =  h_statements
+    x           =  hypothesis_causality
     )
-
-  # Filter with hypothesis classification model
-  if (apply_model) {
-
-    # Verify hypothesis statements are available
-    if (!(purrr::is_empty(hypothesis_entity))) {
-
-      output_hypothesis <- apply_fasttext(
-        hypothesis_entity,
-        hypothesis_causality
-      )
-
-      hypothesis_causality <- output_hypothesis[[1]]
-      hypothesis_entity <- output_hypothesis[[2]]
-
-    }
-  }
 
   # Create Dataframe with hypothesis number and hypothesis
   df_hypothesis <- data.frame(

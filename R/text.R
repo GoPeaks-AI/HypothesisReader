@@ -13,7 +13,7 @@ regex_hp_standardize <- stringr::regex("
   \\(?                                  # Open parens, optional
   \\b                                   # Word boundary
   (h|p|hypothesis\\s*|proposition\\s*)  # Acceptable label format
-  [0-9]{1,3}                            # Number, one to three digits
+  [1-9][0-9]{0,2}                       # Number, one to three digits, not zero
   [a-zA-Z]?                             # Letter, optional
   \\)?                                  # Close parens, optional
   \\s*                                  # Space(s), optional

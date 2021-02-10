@@ -44,39 +44,164 @@ print(pdf_paths)
 # Preceding Steps
 ## Process Text
 ```{r}
-n = 9
+# Select Document Index
+n = 16
 input_path <- pdf_paths[n]
 input_path
 cat("\n\n")
 input_text <- process_text(input_path)
 
-# inspect(input_text, m = 70, span = 20)
+inspect(input_text, m = 1, span = 10)
 ```
 
 # Extract Hypothesis
-## Identify lines with hypothesis pattern
+## Define String Lookup Patterns
 ```{r}
-# Identify lines with hypothesis pattern
-h_match <- input_text %>%
-  stringr::str_match(
-    pattern = regex_hypo_marker
+split_tag <- "<split>"
+hypothesis_tag <- "hypo (.*?):\\s*"
+hypothesis_split_tag <- paste(split_tag, hypothesis_tag, sep = "")
+
+```
+
+## Split Lines with multiple hypothesis tags
+```{r}
+split_text <- stringr::str_split(
+  string  = input_text,
+  pattern = split_tag) %>%
+  unlist()
+
+# Select vector elements which contain hypothesis tags
+logical_hypothesis_tag <- stringr::str_detect(
+  string  = split_text,
+  pattern = hypothesis_tag
+)
+
+hypothesis_001 <- split_text[logical_hypothesis_tag]
+hypothesis_001
+```
+
+## Remove vector elements with token counts below minimum threshold
+```{r}
+# Drop Hypothesis lines with hypothesis tag only
+hypothesis_002 <- drop_hypothesis_below_min_threshold(
+  input_text = hypothesis_001
   )
 
-# h_match
+hypothesis_002
+```
+
+## Filter vector elements based on hypothesis prediction model
+
+```{r}
+hypothesis_003 <- apply_fasttext_model(hypothesis_002)
+hypothesis_003
 ```
 
 
-## Extract hypothesis number
 ```{r}
+apply_model = TRUE
+if (apply_model) {
+  if (!(purrr::is_empty(hypothesis_002))) {
+    
+    hypothesis_003 <- apply_fasttext_model(hypothesis_002)
+    
+  } else {
+    hypothesis_003 <- hypothesis_002
+  }
+}
+
+hypothesis_003
+```
+
+
+## Apply fastText Model
+### Walkthrough
+#### Drop Hypothesis Tag
+```{r}
+model_input <- gen_fasttext_model_input(hypothesis_002)
+model_input
+```
+
+### Create Predictions
+```{r}
+hypothesis_pred <- fastTextR::ft_predict(
+  model   = ft_model,
+  newdata = model_input,
+  rval    = "dense"
+) %>%
+  as.data.frame() 
+
+# Rename columns
+col_names <- names(hypothesis_pred)
+
+if ("__label__1" %in% col_names) {
+  hypothesis_pred <- hypothesis_pred %>%
+    dplyr::rename(yes = "__label__1")
+}
+
+if ("__label__0" %in% col_names) {
+  hypothesis_pred <- hypothesis_pred %>%
+    dplyr::rename(no = "__label__0")
+}
+
+hypothesis_pred
+```
+
+#### Generate Logical Vector 
+```{r}
+col_names <- names(hypothesis_pred)
+
+## If no column not found, all elements are hypothesis
+if (!("no" %in% col_names)) {
+  response <- vector(
+    mode   = "logical",
+    length = length(model_input)
+  )
+
+  for (i in seq_along(model_input)) (response[i] <- TRUE)
+
+  ## If yes column not found, all elements are not hypothesis
+} else if (!("yes" %in% col_names)) {
+  response <- vector(
+    mode   = "logical",
+    length = length(model_input))
+
+  for (i in seq_along(model_input)) (response[i] <- FALSE)
+
+} else {
+  response <- hypothesis_pred %>%
+    dplyr::mutate(
+      Response = dplyr::if_else(
+        condition = yes >= no,
+        true      = TRUE,
+        false     = FALSE
+      )
+    ) %>%
+    dplyr::pull(Response)
+
+}
+```
+
+#### Filter Hypothesis Statements with Logical Vector
+```{r}
+hypothesis_003 <- hypothesis_002[response]
+hypothesis_003
+```
+
+## Extract Hypothesis number/label
+```{r}
+# Identify lines with hypothesis pattern
+h_match <- hypothesis_003 %>%
+  stringr::str_match(
+    pattern = hypothesis_tag
+  )
+
 h_match_num <- h_match[,2]
 
 h_match_num
 ```
 
-### Inspect
-```{r}
-inspect(input_text, m = 80, span = 10)
-```
+
 
 ## Identify unique hypothesis numbers
 ```{r}
@@ -85,7 +210,7 @@ h_match_num_unq <- unique(h_match_num)
 
 h_match_num_unq
 
-# Remove known erroneous hypothesis formats
+# Remove known erroneous hypothesis formats (i.e.: NA)
 error_hypothesis <- c("na")
 
 h_match_num_unq <- setdiff(h_match_num_unq, error_hypothesis)
@@ -98,7 +223,7 @@ h_match_num_unq
 
 #### Reduce to unique hypothesis
 Drop 4 if 4a was already identified.
-
+Drop 4a is 4 was already identified.
 ```{r}
   hypothesis_labels <- h_match_num_unq
   
@@ -106,8 +231,8 @@ Drop 4 if 4a was already identified.
   # hypothesis_labels
 
   # Check if hypothesis label contains letters
-  hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
-  # hypothesis_labels_alpha
+  logical_hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
+  logical_hypothesis_labels_alpha
   
   # Extract Numbers
   regex_return_num <- "(\\d)+"
@@ -116,15 +241,17 @@ Drop 4 if 4a was already identified.
     string = hypothesis_labels,
     pattern = regex_return_num
   )
+  
+  hypothesis_numbers
 
   h_num_output <- c()
   h_label_output <- c()
   
   # hypothesis_labels_alpha <- hypothesis_labels_alpha[1:3]
 
-  for (i in seq_along(hypothesis_labels_alpha)) {
+  for (i in seq_along(logical_hypothesis_labels_alpha)) {
     
-    h_label_alpha <- hypothesis_labels_alpha[i]
+    h_label_alpha <- logical_hypothesis_labels_alpha[i]
     h_num <- hypothesis_numbers[i]
     h_label <- hypothesis_labels[i]
  
@@ -161,23 +288,11 @@ h_match_num_unq <- unique_hypothesis_labels(h_match_num_unq)
 h_match_num_unq
 ```
 
-## Drop Empty Hypothesis Lines
-```{r}
-# Drop Hypothesis lines with hypothesis tag only
-h_match_num <- drop_empty_hypothesis(
-  hypothesis_index        = h_match_num,
-  unique_hypothesis_label = h_match_num_unq,
-  input_text              = input_text
-  )
-
-h_match_num
-```
-
-
 ## Determine Vector Index of Initial Hypthesis Instance
 ```{r}
 # Determine vector index of initial hypothesis statements
 h_initial <- c()
+
 for (i in h_match_num_unq){
   intial_idx <- tapply(seq_along(h_match_num),
                        h_match_num,
@@ -185,125 +300,29 @@ for (i in h_match_num_unq){
   h_initial <- c(h_initial, intial_idx)
 }
 
+h_initial
+
 # Reduce text to only initial hypothesis instances
-h_statements <- input_text[h_initial]
-h_statements
+hypothesis_004 <- hypothesis_003[h_initial]
+hypothesis_004
 ```
-
-## Split Statements on Hypothesis Indicator
-```{r}
-# Split Statements On Indicator (Defined in Processing) ------------------------
-## Define
-split_indicator <- "<split>"
-
-## Split on indicator
-h_statements <- stringr::str_split(
-  string  = h_statements,
-  pattern = split_indicator) %>%
-  unlist()
-
-## Detect statements which contain "Hypo"
-logical_hypothesis_2 <- stringr::str_detect(
-  string  = h_statements,
-  pattern = "hypo"
-)
-
-## Drop Statements that Do Not Include "Hypo"
-h_statements <- h_statements[logical_hypothesis_2]
-
-h_statements
-```
-
-## Drop Duplicate Hypothesis Calls
-```{r}
- # Drop Duplicate Hypothesis Calls --------------------------------------------
-## Extract hypothesis number
-h_id <- h_statements %>%
-  stringr::str_extract("hypo (.*?):") %>%
-  stringr::str_remove_all("hypo ") %>%
-  stringr::str_remove_all(":") 
-
-h_id
-
-## Identify Duplicate Hypothesis Numbers
-logical_hypothesis_3 <- vector(
-  mode   = "logical",
-  length = length(h_id)
-)
-
-h_tracker <- vector(
-  mode   = "integer",
-  length = length(h_id)
-)
-
-for (i in seq_along(h_id)) {
-  num <- h_id[i]
-
-  if (is.na(num)){
-    logical_hypothesis_3[i] = FALSE
-    h_tracker[i] <- -1
-
-  } else if (num %in% h_tracker) {
-    logical_hypothesis_3[i] = FALSE
-    h_tracker[i] <- -1
-
-  } else {
-    logical_hypothesis_3[i] = TRUE
-    h_tracker[i] <- num
-
-  }
-}
-
-## Drop duplicates and non-hypotheses
-h_statements <- h_statements[logical_hypothesis_3]
-
-h_statements
-```
-
-
-## Extract Hypothesis Numbers after possible duplicates dropped
-```{r}
-h_id <- h_statements %>%
-  stringr::str_extract("hypo (.*?):") %>%
-  stringr::str_remove_all("hypo ") %>%
-  stringr::str_remove_all(":") 
-
-h_id
-```
-
 
 ## Create Output Dataframe Columns
 ```{r}
 regex_hypo_marker_2 <- "hypo (.*?):\\s*"
 
+# Extract hypothesis labels
+h_id <- hypothesis_004 %>%
+  stringr::str_extract("hypo (.*?):") %>%
+  stringr::str_remove_all("hypo ") %>%
+  stringr::str_remove_all(":")
+
 # Save current state for causality classification input
-hypothesis_causality <- h_statements
+hypothesis_causality <- hypothesis_004
 
 # Drop ~Hypo #:~ for entity extraction input
-hypothesis_entity <- gsub(regex_hypo_marker_2,"", h_statements)
+hypothesis_entity <- gsub(regex_hypo_marker_2,"", hypothesis_causality)
 hypothesis_entity
-```
-
-## Apply Fasttext Model
-```{r}
-apply_model = FALSE
-
-# Filter with hypothesis classification model
-if (apply_model) {
-
-  # Verify hypothesis statements are available
-  if (!(purrr::is_empty(hypothesis_entity))) {
-
-    output_hypothesis <- apply_fasttext(
-      hypothesis_entity,
-      hypothesis_causality
-    )
-
-    hypothesis_causality <- output_hypothesis[[1]]
-    hypothesis_entity <- output_hypothesis[[2]]
-
-  }
-}
 ```
 
 ## Create Output Dataframe
@@ -333,5 +352,10 @@ df_hypothesis
     dplyr::select(h_id, hypothesis, hypothesis_causality)
 
   df_hypothesis
+```
+
+# Final Function
+```{r}
+hypothesis_extraction(input_text)
 ```
 
