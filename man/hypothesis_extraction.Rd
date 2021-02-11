@@ -4,7 +4,7 @@
 \alias{hypothesis_extraction}
 \title{Extract hypothesis statements}
 \usage{
-hypothesis_extraction(input_text, apply_model = TRUE)
+hypothesis_extraction(input_text, apply_model = FALSE)
 }
 \arguments{
 \item{input_text}{PDF text as processed by \code{\link[=process_text]{process_text()}}.}
