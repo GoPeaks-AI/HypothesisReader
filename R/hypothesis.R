@@ -167,7 +167,7 @@ unique_hypothesis_labels <- function(hypothesis_labels) {
       }
     }
 
-    h_label_output <- stringr::str_sort(x = h_label_output)
+    h_label_output <- stringr::str_sort(x = h_label_output, numeric = TRUE)
 
   }
 
@@ -247,7 +247,7 @@ drop_hypothesis_below_min_threshold <- function(
 #' @param apply_model Boolean tag for whether to filter hypothesis statements
 #'  with the hypothesis classification model.
 
-hypothesis_extraction <- function(input_text, apply_model = TRUE){
+hypothesis_extraction <- function(input_text, apply_model = FALSE){
   # For R CMD Checks
   h_id <- hypothesis <- NULL
 
@@ -325,33 +325,26 @@ hypothesis_extraction <- function(input_text, apply_model = TRUE){
     stringr::str_remove_all("hypo ") %>%
     stringr::str_remove_all(":")
 
-  # Save current state for causality classification input
-  hypothesis_causality <- hypothesis
-
   # Drop ~Hypo #:~ for entity extraction input
-  hypothesis_entity <- gsub(
+  hypothesis <- gsub(
     pattern     = "hypo (.*?):\\s*",
     replacement = "",
-    x           =  hypothesis_causality
+    x           =  hypothesis
     )
 
   # Create Dataframe with hypothesis number and hypothesis
   df_hypothesis <- data.frame(
     h_id,
-    hypothesis_entity,
-    hypothesis_causality,
+    hypothesis,
     stringsAsFactors = FALSE
   )
 
   # Rename and add Hypothesis Number
   df_hypothesis <- df_hypothesis %>%
-    dplyr::rename(
-      hypothesis = hypothesis_entity
-    ) %>%
     dplyr::mutate(
       h_id = paste0("h_", h_id)
     ) %>%
-    dplyr::select(h_id, hypothesis, hypothesis_causality)
+    dplyr::select(h_id, hypothesis)
 
   df_hypothesis
 
