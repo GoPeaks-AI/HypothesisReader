@@ -216,7 +216,7 @@ server <- function(input, output) {
 #'
 #'@export
 
-launch_app <- function() {
+LaunchApp <- function() {
 
   # Run the application
 
