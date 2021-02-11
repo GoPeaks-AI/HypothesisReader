@@ -1,3 +1,53 @@
+#' Compile final table
+#'
+#' Compiles all calculated values into single table
+#'
+#' @param hypothesis Output of [hypothesis_extraction()]
+#' @param entities Output of [entity_extraction()]
+#' @param causality Output of [causality_classification()]
+#' @param direction Output of [direction_classification()]
+#' @param file_name File name of processed PDFs
+
+compile_table <- function(hypothesis, entities, causality,
+                          direction, file_name) {
+  # For R CMD Checks
+  causal_relationship <- cause <- effect <- causality_pred <- NULL
+  direction_pred <- h_id <- hypothesis_num <- iter.df <- NULL
+
+  # Bind hypothesis and entities
+  iter.df <- cbind(hypothesis, entities) %>%
+    tidyr::drop_na()
+
+  # Bind causality and direction
+  iter.df <- cbind(iter.df, causality, direction)
+
+  # Add file name
+  iter.df$file_name <- file_name
+
+  # Modify Headers and Format
+  iter.df <- iter.df %>%
+    dplyr::rename(
+      hypothesis_num = h_id,
+      causal_relationship = causality_pred,
+      direction = direction_pred
+    ) %>%
+    dplyr::select(
+      file_name, hypothesis_num, hypothesis, cause,
+      effect, direction, causal_relationship
+    ) %>%
+    dplyr::mutate(
+      direction = dplyr::if_else(
+        condition = direction == 1,
+        true      = "pos",
+        false     = "neg"
+      )
+    ) %>%
+    purrr::modify_if(is.factor, as.character)
+
+  iter.df
+}
+
+
 #' Causality extraction process
 #'
 #' Executes the complete causality extraction process.
@@ -19,8 +69,9 @@
 
 CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   # For R CMD Checks
-  causal_relationship <- causality_pred <- cause <- effect <- file_name <- NULL
-  h_id <- hypothesis <- hypothesis_num <- NULL
+  causal_relationship <- causality_pred <- cause <- direction <-  NULL
+  direction_pred <- effect <- file_name <- h_id <- hypothesis <- NULL
+  hypothesis_num <- NULL
 
   # Generate File or List of Files
   pdf_path <- c()
@@ -88,30 +139,29 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
       entity_empty <- purrr::is_empty(empty_entity_check)
 
       if (!(entity_empty)) {
-        ## Causality classification
+        # Causality classification
         causality_class <- causality_classification(hypothesis_df)
         causality_class <- data.frame(causality_class)
 
-        # Compile table
-        iter_df <- cbind(hypothesis_df, entities) %>%
-          tidyr::drop_na()
-        iter_df <- cbind(iter_df, causality_class)
-        iter_df$file_name <- file_name
+        # Direction class
+        direction_class <- direction_classification(hypothesis_df)
+        direction_class <- data.frame(direction_class)
 
-        # Modify Headers and Format
-        iter_df <- iter_df %>%
-          dplyr::rename(
-            hypothesis_num = h_id,
-            causal_relationship = causality_pred
-          ) %>%
-          dplyr::select(
-            file_name, hypothesis_num, hypothesis, cause,
-            effect, causal_relationship
-          ) %>%
-          purrr::modify_if(is.factor, as.character)
+        # Compile table
+        iter.df <- compile_table(
+          hypothesis = hypothesis_df,
+          entities   = entities,
+          causality  = causality_class,
+          direction  = direction_class,
+          file_name  = file_name
+          )
+
+        # Remove trailing commas from cause, effect (for aesthetics)
+        iter.df$cause <- gsub(",$", "", iter.df$cause)
+        iter.df$effect <- gsub(",$", "", iter.df$effect)
 
         # Store in List
-        lst_output[[i]] <- iter_df
+        lst_output[[i]] <- iter.df
         i <- i + 1
       }
     } else {
@@ -128,7 +178,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   output_df <- dplyr::bind_rows(lst_output)
 
   # Remove causality predictions if both entities are not generated
-  output_df <- remove_causality_pred(output_df)
+  output_df <- remove_causality_direction_pred(output_df)
 
   output_df
 
