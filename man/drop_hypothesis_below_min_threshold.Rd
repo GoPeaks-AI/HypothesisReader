@@ -4,7 +4,7 @@
 \alias{drop_hypothesis_below_min_threshold}
 \title{Drop hypothesis sentences with fewer than minimum token threshold}
 \usage{
-drop_hypothesis_below_min_threshold(input_text, min_threshold = 6)
+drop_hypothesis_below_min_threshold(input_text, min_threshold = 5)
 }
 \arguments{
 \item{input_text}{Processed input text, one sentence per vector element}
