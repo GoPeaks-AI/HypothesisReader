@@ -93,13 +93,13 @@ hypothesis_002
 ## Filter vector elements based on hypothesis prediction model
 
 ```{r}
-hypothesis_003 <- apply_fasttext_model(hypothesis_002)
-hypothesis_003
+# hypothesis_003 <- apply_fasttext_model(hypothesis_002)
+# hypothesis_003
 ```
 
 
 ```{r}
-apply_model = TRUE
+apply_model = FALSE
 if (apply_model) {
   if (!(purrr::is_empty(hypothesis_002))) {
     
@@ -108,6 +108,8 @@ if (apply_model) {
   } else {
     hypothesis_003 <- hypothesis_002
   }
+} else {
+  hypothesis_003 <- hypothesis_002
 }
 
 hypothesis_003
@@ -184,8 +186,8 @@ if (!("no" %in% col_names)) {
 
 #### Filter Hypothesis Statements with Logical Vector
 ```{r}
-hypothesis_003 <- hypothesis_002[response]
-hypothesis_003
+# hypothesis_003 <- hypothesis_002[response]
+# hypothesis_003
 ```
 
 ## Extract Hypothesis number/label
@@ -317,12 +319,10 @@ h_id <- hypothesis_004 %>%
   stringr::str_remove_all("hypo ") %>%
   stringr::str_remove_all(":")
 
-# Save current state for causality classification input
-hypothesis_causality <- hypothesis_004
 
 # Drop ~Hypo #:~ for entity extraction input
-hypothesis_entity <- gsub(regex_hypo_marker_2,"", hypothesis_causality)
-hypothesis_entity
+hypothesis <- gsub(regex_hypo_marker_2,"", hypothesis_004)
+hypothesis
 ```
 
 ## Create Output Dataframe
@@ -331,8 +331,7 @@ hypothesis_entity
 # Create Dataframe with hypothesis number and hypothesis
 df_hypothesis <- data.frame(
   h_id,
-  hypothesis_entity,
-  hypothesis_causality,
+  hypothesis,
   stringsAsFactors = FALSE
 )
 
@@ -343,13 +342,10 @@ df_hypothesis
 ```{r}
   # Rename and add Hypothesis Number
   df_hypothesis <- df_hypothesis %>%
-    dplyr::rename(
-      hypothesis = hypothesis_entity
-    ) %>%
     dplyr::mutate(
       h_id = paste0("h_", h_id)
     ) %>%
-    dplyr::select(h_id, hypothesis, hypothesis_causality)
+    dplyr::select(h_id, hypothesis)
 
   df_hypothesis
 ```

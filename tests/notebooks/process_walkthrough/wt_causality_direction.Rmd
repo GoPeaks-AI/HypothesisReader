@@ -1,0 +1,263 @@
+---
+title: "Walkthrough - Causality & Direction Classification"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+
+
+# Preceding Steps
+## Process Text
+```{r}
+n = 19
+input_path <- pdf_paths[n]
+input_path
+
+text_processed <- process_text(input_path)
+
+# inspect(text_processed.v, m = 180)
+```
+
+## Extract Hypothesis
+```{r}
+hypothesis_df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+
+hypothesis_df
+```
+
+## Hypothesis Select
+```{r}
+hypothesis <- hypothesis_df %>%
+  dplyr::select(hypothesis)
+
+hypothesis
+```
+
+## Generate Entities
+```{r}
+entities <- entity_extraction(hypothesis_df)
+entities
+```
+
+
+
+## Generate Model Input
+### Walkthrough
+#### Compile Table
+```{r}
+  model_input.df <- hypothesis %>%
+    dplyr::bind_cols(entities) %>%
+    dplyr::mutate(
+      row_id= dplyr::row_number()
+    ) %>%
+    dplyr::select(row_id, dplyr::everything())
+
+model_input.df
+```
+#### Strip Punctuation
+```{r}
+pattern_punct <- "[[:punct:]]"
+
+model_input.df <- model_input.df %>% 
+    dplyr::mutate(
+      hypothesis = stringr::str_remove_all(
+        string  = hypothesis,
+        pattern = pattern_punct
+      ),
+      cause = stringr::str_remove_all(
+        string  = cause,
+        pattern = pattern_punct
+      ),
+      effect = stringr::str_remove_all(
+        string  = effect,
+        pattern = pattern_punct
+      )
+    ) 
+
+model_input.df
+```
+#### Replace Missing with Tag
+```{r}
+missing_tag <- "<missing>"
+
+model_input.df <- model_input.df %>% 
+    dplyr::mutate(                               # Replace Missing With Tag
+      cause   = dplyr::if_else(                  # Quiets warning to console
+        condition = cause == "",
+        true      =  missing_tag,
+        false     = cause
+      ),
+      effect  = dplyr::if_else(
+        condition = effect == "",
+        true      =  missing_tag,
+        false     = effect
+      )
+    )
+
+model_input.df
+```
+
+#### Replace Entity with Node Tags
+```{r}
+model_input.df <- model_input.df %>% 
+    dplyr::mutate(                               # Replace entity with node1/2
+      causal_statement = dplyr::if_else(
+        condition = cause != missing_tag,
+        true = {
+          stringr::str_replace(
+            string      = hypothesis,
+            pattern     = cause,
+            replacement = "node1"
+          )},
+        false = hypothesis
+      )
+    ) %>%
+    dplyr::mutate(
+      causal_statement = dplyr::if_else(
+        condition = effect != missing_tag,
+        true = {
+          stringr::str_replace(
+            string      = causal_statement,
+            pattern     = effect,
+            replacement = "node2"
+          )},
+        false = causal_statement
+      )
+    )
+
+model_input.df
+```
+
+
+### Function
+#### Lemm
+```{r}
+gen_causality_direction_model_input(hypothesis_df, token_method = "lemm")
+```
+
+#### Stem
+```{r}
+gen_causality_direction_model_input(hypothesis_df, token_method = "stem")
+```
+
+
+#### Warning
+```{r}
+gen_causality_direction_model_input(hypothesis_df, token_method = "error")
+```
+
+
+# Causality / Direction
+## Generate Predictions
+```{r}
+# Causality classification
+causality_class <- causality_classification(hypothesis_df)
+causality_class <- data.frame(causality_class)
+causality_class
+```
+
+```{r}
+# Direction class
+direction_class <- direction_classification(hypothesis_df)
+direction_class <- data.frame(direction_class)
+direction_class
+```
+
+## Compile Table
+```{r}
+file_name <- basename(input_path)
+
+# Compile table
+iter.df <- cbind(hypothesis_df, entities) %>%
+  tidyr::drop_na()
+iter.df <- cbind(iter.df, causality_class, direction_class)
+iter.df$file_name <- file_name
+
+iter.df
+```
+
+### Modify Headers and Format
+```{r}
+
+iter.df <- iter.df %>%
+          dplyr::rename(
+            hypothesis_num = h_id,
+            causal_relationship = causality_pred,
+            direction = direction_pred
+          ) %>%
+          dplyr::select(
+            file_name, hypothesis_num, hypothesis, cause,
+            effect, direction, causal_relationship
+          ) %>%
+          dplyr::mutate(
+            direction = dplyr::if_else(
+              condition = direction == 1,
+              true      = "pos",
+              false     = "neg"
+              )
+          ) %>%
+          purrr::modify_if(is.factor, as.character)
+
+iter.df
+```
+## Remove trailing comma
+```{r}
+
+
+iter.df %>% 
+  dplyr::mutate(
+    effect = stringr::str_remove_all(string = effect, pattern = stringr::regex("$,"))
+  )
+
+
+
+iter.df
+```
+
+
+
+## Remove if both nodes not present
+```{r}
+  iter.df %>%
+    dplyr::mutate(
+      causal_relationship = dplyr::if_else(
+        condition = ((cause == "") | (effect == "")),
+        true      = "",
+        false     = as.character(causal_relationship)
+      ),
+      direction = dplyr::if_else(
+        condition = ((cause == "") | (effect == "")),
+        true      = "",
+        false     = as.character(direction)
+      )
+    )
+```
+
+# Final Function
+```{r}
+CausalityExtraction(file_path = input_path)
+```
+

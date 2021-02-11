@@ -48,6 +48,19 @@ joblib <- reticulate::import("joblib")
 nltk_stem <- reticulate::import("nltk.stem")
 ```
 
+## Assisting Functions
+```{r}
+#' Inspect Text String
+inspect <- function(x, m = 100, span = 20) {
+  n = m + span - 1
+  x[m:n]
+}
+```
+
+## Regex
+```{r}
+regex_hypo_marker <- "<split>hypo (.*?):"
+```
 
 ## Data
 ```{r import_data}
@@ -90,6 +103,20 @@ print(pdf_paths)
  #    warning("File name(s) or folder path required.")
  #  )
 ```
+
+```{r}
+text_processed <- process_text(pdf)
+
+## Hypothesis Classification
+    hypothesis_df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+
+    # Test if empty
+    hypothesis_empty_check <- hypothesis_df %>%
+      dplyr::pull(hypothesis)
+
+    hypothesis_empty <- purrr::is_empty(hypothesis_empty_check)
+```
+
 
 ### Execute
 ```{r}
