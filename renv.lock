@@ -737,6 +737,13 @@
       "Repository": "CRAN",
       "Hash": "06c85365a03fdaf699966cc1d3cf53ea"
     },
+    "rtika": {
+      "Package": "rtika",
+      "Version": "1.24.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d45a20dddd5f27fd45b8727ba77da5d6"
+    },
     "scales": {
       "Package": "scales",
       "Version": "1.1.1",
