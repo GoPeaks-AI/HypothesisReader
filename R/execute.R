@@ -38,7 +38,7 @@ compile_table <- function(hypothesis, entities, causality,
     dplyr::mutate(
       direction = dplyr::if_else(
         condition = direction == 1,
-        true      = "pos",
+        true      = "non_neg",
         false     = "neg"
       )
     ) %>%
@@ -178,7 +178,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   output_df <- dplyr::bind_rows(lst_output)
 
   # Remove causality predictions if both entities are not generated
-  output_df <- remove_causality_direction_pred(output_df)
+  output_df <- remove_pred(output_df)
 
   output_df
 

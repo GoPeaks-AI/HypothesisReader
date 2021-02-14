@@ -8,7 +8,7 @@
 
 get_path_direction_model <- function() {
   system.file("extdata", "models",
-              "direction_bow_pipeline_logistic_regression_stem.joblib",
+              "direction_classification.joblib",
               package = 'CausalityExtraction')
 }
 
@@ -58,6 +58,13 @@ gen_direction_class <- function(model_input) {
 #' Direction classification
 #'
 #' Wrapper function. Executes all steps in the direction classification process.
+#' The causality classification model was trained under the following
+#' conditions :
+#'  * Token normalization method: stemming
+#'  * Cause/Effect entity replacement: no
+#'  * Imbalanced Sampling: no
+#'  * Feature processing: Bag-of-words
+#'  * Model: Support Vector Machines
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
@@ -68,8 +75,9 @@ direction_classification <- function(hypothesis_df) {
   # Process hypothesis into model input
   model_input <- gen_causality_direction_model_input(
     hypothesis_df = hypothesis_df,
+    entity_extraction = FALSE,
     token_method = "stem"
-    )
+  )
 
   # Generate causality predictions
   direction_pred <- gen_direction_class(model_input)

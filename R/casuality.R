@@ -8,7 +8,7 @@
 
 get_path_causality_model <- function() {
   system.file("extdata", "models",
-              "causality_bow_pipeline_naive_bayes_lemm.joblib",
+              "causality_classification.joblib",
               package = 'CausalityExtraction')
 }
 
@@ -58,6 +58,13 @@ gen_causality_class <- function(model_input) {
 #' Causality classification
 #'
 #' Wrapper function. Executes all steps in the causality classification process.
+#' The causality classification model was trained under the following
+#' conditions :
+#'  * Token normalization method: stemming
+#'  * Cause/Effect entity replacement: yes
+#'  * Imbalanced Sampling: no
+#'  * Feature processing: Bag-of-words
+#'  * Model: Naive Bayes - Multinomial
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
@@ -68,7 +75,8 @@ causality_classification <- function(hypothesis_df) {
   # Process hypothesis into model input
   model_input <- gen_causality_direction_model_input(
     hypothesis_df = hypothesis_df,
-    token_method = "lemm"
+    entity_extraction = TRUE,
+    token_method = "stem"
     )
 
   # Generate causality predictions

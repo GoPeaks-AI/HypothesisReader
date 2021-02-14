@@ -64,6 +64,8 @@ stem <- Vectorize(
 #' causality and direction classification models.
 #'
 #' @param hypothesis hypothesis statement output of [hypothesis_extraction()]
+#' @param entity_extraction Boolean indicating if the cause and effect nodes
+#'  should be replaced with normalized tags
 #' @param token_method flag for selecting the method of token normalization to
 #'  be applied to the text data, lemmatization or stemming
 #'
@@ -71,6 +73,7 @@ stem <- Vectorize(
 
 gen_causality_direction_model_input <- function(
   hypothesis_df,
+  entity_extraction = TRUE,
   token_method = "lemm"
   ) {
   # For R CMD Checks
@@ -97,7 +100,7 @@ gen_causality_direction_model_input <- function(
   model_input.df <- hypothesis %>%
     dplyr::bind_cols(entities) %>%
     dplyr::mutate(
-      row_id= dplyr::row_number()
+      row_id = dplyr::row_number()
     ) %>%
     dplyr::select(row_id, dplyr::everything()) %>%
     dplyr::mutate(
@@ -125,31 +128,39 @@ gen_causality_direction_model_input <- function(
         true      =  missing_tag,
         false     = effect
       )
-    ) %>%
-    dplyr::mutate(                               # Replace entity with node1/2
-      causal_statement = dplyr::if_else(
-        condition = cause != missing_tag,
-        true = {
-          stringr::str_replace(
-            string      = hypothesis,
-            pattern     = cause,
-            replacement = "node1"
-          )},
-        false = hypothesis
-      )
-    ) %>%
-    dplyr::mutate(
-      causal_statement = dplyr::if_else(
-        condition = effect != missing_tag,
-        true = {
-          stringr::str_replace(
-            string      = causal_statement,
-            pattern     = effect,
-            replacement = "node2"
-          )},
-        false = causal_statement
-      )
     )
+
+  # Replace entity with node1/2 tag
+  if (entity_extraction) {
+    model_input.df <- model_input.df %>%
+      dplyr::mutate(
+        causal_statement = dplyr::if_else(
+          condition = (cause != missing_tag),
+          true = {
+            stringr::str_replace(
+              string      = hypothesis,
+              pattern     = cause,
+              replacement = "node1"
+            )},
+          false = hypothesis
+        )
+      ) %>%
+      dplyr::mutate(
+        causal_statement = dplyr::if_else(
+          condition = (effect != missing_tag),
+          true = {
+            stringr::str_replace(
+              string      = causal_statement,
+              pattern     = effect,
+              replacement = "node2"
+            )},
+          false = causal_statement
+        )
+      )
+  } else {
+    model_input.df <- model_input.df %>%
+      dplyr::mutate(causal_statement = hypothesis)
+  }
 
 
   ## Remove stopwords
@@ -172,6 +183,7 @@ gen_causality_direction_model_input <- function(
     length = length(tokens)
   )
 
+  # Execute token normalization by lemming or stemming
   if (token_method == "lemm") {
     ### Download wordnet library
     mem_download_wordnet()
@@ -211,7 +223,7 @@ gen_causality_direction_model_input <- function(
 #' Remove classification predictions if both entity nodes are not
 #' detected
 #'
-#' Removes the causality and direction classification prediction if both Cause
+#' Removes the causality classification prediction if both Cause
 #' and Effect entities are not detected.
 #'
 #' @param CausalityExtractionTable Output of [CausalityExtraction()]
@@ -219,21 +231,40 @@ gen_causality_direction_model_input <- function(
 #' @noRd
 #
 
-remove_causality_direction_pred <- function(CausalityExtractionTable) {
+remove_pred <- function(CausalityExtractionTable) {
   cause <- causal_relationship <- direction <- effect <- NULL
 
-  CausalityExtractionTable %>%
-    dplyr::mutate(
-      causal_relationship = dplyr::if_else(
-        condition = ((cause == "") | (effect == "")),
-        true      = "",
-        false     = as.character(causal_relationship)
-      ),
-      direction = dplyr::if_else(
-        condition = ((cause == "") | (effect == "")),
-        true      = "",
-        false     = as.character(direction)
+  # Manually assign which predictions to drop based on model pre-processing.
+  direction_remove = FALSE
+  causality_remove = TRUE
+
+  if (causality_remove) {
+
+    CausalityExtractionTable <- CausalityExtractionTable %>%
+      dplyr::mutate(
+        causal_relationship = dplyr::if_else(
+          condition = ((cause == "") | (effect == "")),
+          true      = "",
+          false     = as.character(causal_relationship)
+        )
       )
-    )
+
+  }
+
+  if (direction_remove) {
+
+    CausalityExtractionTable <- CausalityExtractionTable %>%
+      dplyr::mutate(
+        causal_relationship = dplyr::if_else(
+          condition = ((cause == "") | (effect == "")),
+          true      = "",
+          false     = as.character(direction)
+        )
+      )
+
+  }
+
+  # Return
+  CausalityExtractionTable
 
 }
