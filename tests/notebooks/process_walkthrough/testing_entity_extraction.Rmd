@@ -96,7 +96,7 @@ np$argmax(x,  axis = -1)
 x
 x_df <- data.frame(t(matrix(x, nrow=dim(x)[3], byrow=TRUE)))
 x_df
-pmap_int(list(Factor1, Factor2, Factor3), ~which.max(c(...))))
+pmap_int(list(Factor1, Factor2, Factor3), ~which.max(c(...)))
 
 x_df %>% 
   mutate(

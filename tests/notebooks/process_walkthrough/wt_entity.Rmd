@@ -18,16 +18,6 @@ knitr::opts_chunk$set(echo = TRUE)
   )
 ```
 
-## Data
-```{r}
-folder_path <- "./../../../inst/extdata/sample_documents/"
-pdf_paths <- list.files(recursive = FALSE, 
-                       path = folder_path, 
-                       pattern = ".pdf", 
-                       full.names = TRUE)
-print(pdf_paths)
-```
-
 ## Assisting Functions
 ```{r}
 #' Inspect Text String
@@ -42,11 +32,21 @@ inspect <- function(x, m = 100, span = 20) {
 regex_hypo_marker <- "<split>hypo (.*?):"
 ```
 
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
 
 # Preceding Steps
 ## Process Text
 ```{r}
-input_path <- pdf_paths[1]
+n = 17
+input_path <- pdf_paths[n]
 input_path
 
 text_processed.v <- process_text(input_path)
@@ -71,7 +71,7 @@ CausalityExtraction(input_path)
 ## Select Hypothesis Input
 The overall process works on a vector of hypothesis statements, but executes on a individual level, which is then vectorized. To see the individual steps, we will select a single hypothesis and analyze.
 ```{r}
-row_num <- 3
+row_num <- 1
 hypothesis <- hypothesis_df %>% slice(row_num) %>% pull(hypothesis)
 hypothesis
 ```

@@ -35,5 +35,195 @@ if (is.na(jar)) {
 ```
 
 
+# Break Out Nested Hypothesis
+```{r}
+h_sample = "the strength of the relationship between (a) poor prior performance, (b) large firm size, and (c) young firm age on one hand and the appointment of outside directors to the board on the other hand will decrease over time added test (g) will this be detected"
+```
 
+
+```{r}
+# stringr::str_locate(string = h_sample, pattern = "poor")
+
+idx_start <- c()
+idx_end <- c()
+idx_start <- c(idx_start, 1)
+
+for (ltr in letters) {
+  letter_lookup <- paste("\\(", ltr, "\\)", sep = "")
+  detected <- stringr::str_detect(string = h_sample, pattern = letter_lookup)
+  if (detected) {
+    
+    print(letter_lookup)
+    letter_locate <- stringr::str_locate(string = h_sample, pattern = letter_lookup)
+    print(letter_locate)
+    idx_start <- c(idx_start, letter_locate[2])
+    idx_end <- c(idx_end, letter_locate[1])
+    
+    
+  } else {
+    break
+  }
+}
+idx_end <- c(idx_end, nchar(h_sample))
+```
+## Segement
+```{r}
+h_segments <- vector(mode = "character", length = length(idx_start))
+
+for (i in seq_along(idx_start)) {
+  h_segments[i] <- substr(x = h_sample, start = idx_start[i], stop = idx_end[i])
+  h_segments[i]  <- gsub("\\($", "", h_segments[i])
+  h_segments[i]  <- gsub("^\\)", "", h_segments[i])
+  h_segments[i]  <- stringr::str_trim(string = h_segments[i])
+} 
+h_segments 
+```
+
+## Remove Stopwords
+```{r}
+h_segments.df <- as.data.frame(h_segments)
+
+  h_segments.df_001 <- h_segments.df %>%
+    dplyr::mutate(
+      row_id = dplyr::row_number()
+    ) %>% 
+    tidytext::unnest_tokens(word, h_segments, strip_punct = FALSE) 
+  
+  
+  h_segments.df_002 <- h_segments.df_001%>%
+    dplyr::anti_join(
+      tidytext::get_stopwords(),
+      by = "word"
+    )
+  
+  nest_length <- h_segments.df_002 %>% 
+    group_by(row_id) %>% 
+    summarise(n_tokens= n()) %>% 
+    slice(2:(length(h_segments) - 1)) %>% 
+    filter(n_tokens == max(n_tokens)) %>% 
+    select(n_tokens) %>% 
+    distinct() %>% 
+    pull(n_tokens)
+
+h_segments.df_003 <- h_segments.df_002 %>% 
+    dplyr::group_by(row_id) %>%
+    dplyr::mutate(
+      sentence = stringr::str_c(
+        word,
+        collapse = " ")
+    ) %>% 
+  ungroup() %>% 
+  select(sentence) %>% 
+  distinct()
+
+h_sw_remove <- h_segments.df_003 %>% pull(sentence)
+h_sw_remove
+```
+
+## Remove trailing commas
+```{r}
+for (i in seq_along(idx_start)) {
+  h_sw_remove[i]  <- gsub("\\,$", "", h_sw_remove[i])
+} 
+h_sw_remove 
+```
+
+
+## Replace Interior segments with stopword removed segements
+```{r}
+length(h_segments)
+h_segments_002 <- vector(mode = "character", length = (length(h_segments) -1))
+h_segments_002[1] <- h_segments[1]
+
+
+h_segments_002
+
+i = 1
+while (i <= (length(h_segments) - 2)) {
+
+  print (i)
+  h_segments_002[i+1] <- h_sw_remove[i+1]
+  
+  i = i +1
+  
+}
+h_segments_002
+```
+
+
+## Subset final nested hypothesis
+```{r}
+h_final_split <- h_segments.df_003 %>% 
+  slice(length(h_segments)) %>% 
+  tidytext::unnest_tokens(word, sentence, strip_punct = FALSE) %>% 
+  mutate(
+    segement_id = if_else(
+      dplyr::row_number() <= nest_length, 1, 2
+    )
+  ) %>% 
+  dplyr::group_by(segement_id) %>%
+  dplyr::mutate(
+      sentence = stringr::str_c(
+        word,
+        collapse = " ")
+    ) %>% 
+  ungroup() %>% 
+  select(sentence) %>% 
+  distinct() %>% 
+  pull(sentence)
+
+h_final_split
+  
+```
+
+## Replace last segment with split segment
+```{r}
+h_segments_003 <- c(h_segments_002, h_segment_split)
+h_segments_003
+```
+```{r}
+h_sample
+```
+
+```{r}
+h_segments.df_001a <- h_segments.df_001 %>% 
+  dplyr::filter(row_id == max(row_id))
+
+n_tokens_final <- length(h_segments.df_001a$word)
+
+h_segments.df_001a %>% 
+  slice((nest_length):n_tokens_final) %>% 
+  mutate(
+    row_id = 1
+  ) %>% 
+  group_by(row_id) %>% 
+  dplyr::mutate(
+    sentence = stringr::str_c(
+      word,
+      collapse = " ")
+  ) %>% 
+  ungroup() %>% 
+  select(sentence) %>% 
+  distinct() %>% 
+  pull()
+  
+
+```
+
+
+# Reconstruct Segments
+
+Fix using stop word removed final stirng
+```{r}
+i = 1
+while (i <= length(h_segments_003) - 2) {
+  print(i)
+  h_temp <- paste(h_segments_003[1], h_segments_003[1+i], 
+                  h_segments_003[length(h_segments_003)], sep = " ")
+  
+  h_temp <- stringr::str_squish(h_temp)
+  print(h_temp)
+  i = i+1
+}
+```
 

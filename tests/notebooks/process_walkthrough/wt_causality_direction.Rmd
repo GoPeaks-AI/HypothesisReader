@@ -77,6 +77,7 @@ entities
 
 model_input.df
 ```
+
 #### Strip Punctuation
 ```{r}
 pattern_punct <- "[[:punct:]]"
@@ -99,6 +100,7 @@ model_input.df <- model_input.df %>%
 
 model_input.df
 ```
+
 #### Replace Missing with Tag
 ```{r}
 missing_tag <- "<missing>"
@@ -122,51 +124,85 @@ model_input.df
 
 #### Replace Entity with Node Tags
 ```{r}
-model_input.df <- model_input.df %>% 
-    dplyr::mutate(                               # Replace entity with node1/2
-      causal_statement = dplyr::if_else(
-        condition = cause != missing_tag,
-        true = {
-          stringr::str_replace(
-            string      = hypothesis,
-            pattern     = cause,
-            replacement = "node1"
-          )},
-        false = hypothesis
-      )
-    ) %>%
-    dplyr::mutate(
-      causal_statement = dplyr::if_else(
-        condition = effect != missing_tag,
-        true = {
-          stringr::str_replace(
-            string      = causal_statement,
-            pattern     = effect,
-            replacement = "node2"
-          )},
-        false = causal_statement
-      )
-    )
+entity_extraction = FALSE
 
-model_input.df
+if (entity_extraction) {
+  print("if")
+  model_input.df_001 <- model_input.df %>% 
+      dplyr::mutate(                               # Replace entity with node1/2
+        causal_statement = dplyr::if_else(
+          condition = cause != missing_tag,
+          true = {
+            stringr::str_replace(
+              string      = hypothesis,
+              pattern     = cause,
+              replacement = "node1"
+            )},
+          false = hypothesis
+        )
+      ) %>%
+      dplyr::mutate(
+        causal_statement = dplyr::if_else(
+          condition = effect != missing_tag,
+          true = {
+            stringr::str_replace(
+              string      = causal_statement,
+              pattern     = effect,
+              replacement = "node2"
+            )},
+          false = causal_statement
+        )
+      )
+} else {
+  print("else")
+  model_input.df_001 <- model_input.df %>% 
+    dplyr::mutate(
+      causal_statement = hypothesis
+    )
+}
+
+model_input.df_001
+```
+
+#### Remove Stopwords
+```{r}
+  ## Remove stopwords
+  model_input.df_002 <- model_input.df_001 %>%
+    tidytext::unnest_tokens(word, causal_statement) %>%
+    dplyr::anti_join(
+      tidytext::get_stopwords(),
+      by = "word"
+    ) %>%
+    dplyr::select(row_id, word)
 ```
 
 
 ### Function
-#### Lemm
+#### Causality
 ```{r}
-gen_causality_direction_model_input(hypothesis_df, token_method = "lemm")
+gen_causality_direction_model_input(
+  hypothesis_df, 
+  entity_extraction = TRUE,
+  token_method = "stem"
+  )
 ```
 
-#### Stem
+#### Direction
 ```{r}
-gen_causality_direction_model_input(hypothesis_df, token_method = "stem")
+gen_causality_direction_model_input(
+  hypothesis_df, 
+  entity_extraction = FALSE,
+  token_method = "stem"
+  )
 ```
 
 
 #### Warning
 ```{r}
-gen_causality_direction_model_input(hypothesis_df, token_method = "error")
+gen_causality_direction_model_input(
+  hypothesis_df, 
+  token_method = "error"
+  )
 ```
 
 
@@ -223,6 +259,7 @@ iter.df <- iter.df %>%
 
 iter.df
 ```
+
 ## Remove trailing comma
 ```{r}
 
@@ -247,11 +284,6 @@ iter.df
         condition = ((cause == "") | (effect == "")),
         true      = "",
         false     = as.character(causal_relationship)
-      ),
-      direction = dplyr::if_else(
-        condition = ((cause == "") | (effect == "")),
-        true      = "",
-        false     = as.character(direction)
       )
     )
 ```
