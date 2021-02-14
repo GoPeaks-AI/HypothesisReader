@@ -11,4 +11,13 @@ direction_classification(hypothesis_df)
 }
 \description{
 Wrapper function. Executes all steps in the direction classification process.
+The causality classification model was trained under the following
+conditions :
+\itemize{
+\item Token normalization method: stemming
+\item Cause/Effect entity replacement: no
+\item Imbalanced Sampling: no
+\item Feature processing: Bag-of-words
+\item Model: Support Vector Machines
+}
 }
