@@ -60,35 +60,28 @@ gen_entity_class <- function(hypothesis) {
   entity_predict <- NULL
 
   # Convert to Numpy Array
-  hypothesis_np <- np$array(hypothesis)
-  hypothesis_tf <- tf$convert_to_tensor(hypothesis_np)
+  hypothesis.np <- np$array(hypothesis)
+  hypothesis.tf <- tf$convert_to_tensor(hypothesis.np)
 
   # Load entity extraction model
   model_entity <- mem_load_entity_model()
 
   # Generate predictions
-  pred_classes_array <- model_entity$predict(hypothesis_tf)
-
-  # reticulate::source_python(get_path_entity_script())
-
-  # pred_classes_array <- entity_predict(
-  #   hypothesis_np)
-  #
-  # print(pred_classes_array)
+  pred_classes.np <- model_entity$predict(hypothesis.tf)
 
   # Convert predictions to dataframe
-  pred_classes_df <- data.frame(
+  pred_classes.df <- data.frame(
     t(
       matrix(
-        data = pred_classes_array,
-        nrow = dim(pred_classes_array)[3],
+        data = pred_classes.np,
+        nrow = dim(pred_classes.np)[3],
         byrow=TRUE
       )
     )
   )
 
   # Determine class prediction for each token
-  pred_classes <- pred_classes_df %>%
+  pred_classes <- pred_classes.df %>%
     dplyr::mutate(
       class = (purrr::pmap_int(
         .l = list(X1, X2, X3),
@@ -330,6 +323,13 @@ entity_extraction_indv <- function(hypothesis) {
   ## Convert Indexes to Text
   entity_text_output <- index_to_entity(hypothesis, index_entities)
 
+  ## Remove hypothesis tag, if detected
+  entity_text_output <- gsub(
+    pattern     = "hypo (.*?):\\s*",
+    replacement = "",
+    x           =  entity_text_output
+  )
+
   entity_text_output
 }
 
@@ -339,29 +339,29 @@ entity_extraction_indv <- function(hypothesis) {
 #' Wrapper function. Executes all steps in the entity  extraction process for
 #' a multiple hypothesis statements.
 #'
-#' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
+#' @param hypothesis.df hypothesis statement output of [hypothesis_extraction()]
 #'
 #' @noRd
 
-entity_extraction <- function(hypothesis_df){
+entity_extraction <- function(hypothesis.df){
   # For R CMD Checks
   cause <- effect <- V1 <- V2 <- NULL
 
   # Extract entity extraction hypothesis input
-  hypothesis_vec <- hypothesis_df %>%
+  hypothesis.v <- hypothesis.df %>%
     dplyr::pull(hypothesis)
 
   # Initialize output list
-  num_hypothesis <- length(hypothesis_vec)
+  num_hypothesis <- length(hypothesis.v)
 
   lst_entity_text_output <- vector(
     mode = "list",
     length = num_hypothesis
   )
 
-  for (i in seq_along(hypothesis_vec)){
+  for (i in seq_along(hypothesis.v)){
     # Extract hypothesis
-    hypothesis <- hypothesis_vec[i]
+    hypothesis <- hypothesis.v[i]
 
     # Extract entities
     entity_text_output <- entity_extraction_indv(hypothesis)
@@ -371,7 +371,7 @@ entity_extraction <- function(hypothesis_df){
   }
 
   # Convert list of lists to Dataframe
-  entity_text_output_df <- as.data.frame(
+  entity_text_output.df <- as.data.frame(
     do.call(
       rbind,
       lapply(lst_entity_text_output, as.vector))
@@ -382,7 +382,7 @@ entity_extraction <- function(hypothesis_df){
     )
 
   # Replace missing entity
-  entity_text_output_df <- entity_text_output_df %>%
+  entity_text_output.df <- entity_text_output.df %>%
     # dplyr::mutate(                                    # NA is missing
     #   cause  = dplyr::na_if(
     #     cause,
@@ -402,6 +402,6 @@ entity_extraction <- function(hypothesis_df){
     dplyr::mutate(
       cause = as.character(cause)
     )
-  entity_text_output_df
+  entity_text_output.df
 
 }

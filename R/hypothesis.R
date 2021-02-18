@@ -328,12 +328,12 @@ hypothesis_extraction <- function(input_text, apply_model = FALSE){
     stringr::str_remove_all("hypo ") %>%
     stringr::str_remove_all(":")
 
-  # Drop ~Hypo #:~ for entity extraction input
-  hypothesis <- gsub(
-    pattern     = "hypo (.*?):\\s*",
-    replacement = "",
-    x           =  hypothesis
-    )
+  # # Drop ~Hypo #:~ for entity extraction input
+  # hypothesis <- gsub(
+  #   pattern     = "hypo (.*?):\\s*",
+  #   replacement = "",
+  #   x           =  hypothesis
+  #   )
 
   # Create Dataframe with hypothesis number and hypothesis
   df_hypothesis <- data.frame(

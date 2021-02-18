@@ -95,6 +95,16 @@ gen_causality_direction_model_input <- function(
   hypothesis <- hypothesis_df %>%
     dplyr::select(hypothesis)
 
+  # Drop ~Hypo #:~
+  hypothesis <- hypothesis %>%
+    dplyr::mutate(
+      hypothesis = gsub(
+        pattern = "hypo (.*?):\\s*",
+        replacement = "",
+        x = hypothesis
+      )
+    )
+
   # Text Processing ------------------------------------------------------------
   ##  Drop punctuation & replace with normalized entity tags
   model_input.df <- hypothesis %>%

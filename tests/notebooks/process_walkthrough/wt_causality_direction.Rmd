@@ -43,22 +43,38 @@ text_processed <- process_text(input_path)
 
 ## Extract Hypothesis
 ```{r}
-hypothesis_df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+hypothesis.df <- hypothesis_extraction(text_processed, apply_model = FALSE)
 
-hypothesis_df
+hypothesis.df
 ```
 
 ## Hypothesis Select
 ```{r}
-hypothesis <- hypothesis_df %>%
+hypothesis <- hypothesis.df %>%
   dplyr::select(hypothesis)
 
 hypothesis
 ```
 
+## Drop Hypothesis Tag
+```{r}
+
+hypothesis <- hypothesis %>% 
+  mutate(
+    hypothesis = gsub(
+      pattern = "hypo (.*?):\\s*", 
+      replacement = "", 
+      x = hypothesis
+      )
+  )
+
+hypothesis
+```
+
+
 ## Generate Entities
 ```{r}
-entities <- entity_extraction(hypothesis_df)
+entities <- entity_extraction(hypothesis.df)
 entities
 ```
 
@@ -181,7 +197,7 @@ model_input.df_001
 #### Causality
 ```{r}
 gen_causality_direction_model_input(
-  hypothesis_df, 
+  hypothesis.df, 
   entity_extraction = TRUE,
   token_method = "stem"
   )
@@ -190,7 +206,7 @@ gen_causality_direction_model_input(
 #### Direction
 ```{r}
 gen_causality_direction_model_input(
-  hypothesis_df, 
+  hypothesis.df, 
   entity_extraction = FALSE,
   token_method = "stem"
   )
@@ -200,7 +216,7 @@ gen_causality_direction_model_input(
 #### Warning
 ```{r}
 gen_causality_direction_model_input(
-  hypothesis_df, 
+  hypothesis.df, 
   token_method = "error"
   )
 ```
@@ -210,14 +226,14 @@ gen_causality_direction_model_input(
 ## Generate Predictions
 ```{r}
 # Causality classification
-causality_class <- causality_classification(hypothesis_df)
+causality_class <- causality_classification(hypothesis.df)
 causality_class <- data.frame(causality_class)
 causality_class
 ```
 
 ```{r}
 # Direction class
-direction_class <- direction_classification(hypothesis_df)
+direction_class <- direction_classification(hypothesis.df)
 direction_class <- data.frame(direction_class)
 direction_class
 ```
@@ -227,7 +243,7 @@ direction_class
 file_name <- basename(input_path)
 
 # Compile table
-iter.df <- cbind(hypothesis_df, entities) %>%
+iter.df <- cbind(hypothesis.df, entities) %>%
   tidyr::drop_na()
 iter.df <- cbind(iter.df, causality_class, direction_class)
 iter.df$file_name <- file_name
@@ -279,6 +295,20 @@ iter.df
         false     = as.character(causal_relationship)
       )
     )
+```
+
+## Drop Hypothesis Tag
+```{r}
+iter.df <- iter.df %>% 
+  mutate(
+    hypothesis = gsub(
+      pattern = "hypo (.*?):\\s*", 
+      replacement = "", 
+      x = hypothesis
+      )
+  )
+
+iter.df
 ```
 
 # Final Function

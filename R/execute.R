@@ -114,17 +114,17 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
     if(inherits(possible_error, "error")) next
 
     ## Hypothesis Classification
-    hypothesis_df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+    hypothesis.df <- hypothesis_extraction(text_processed, apply_model = FALSE)
 
     # Test if empty
-    hypothesis_empty_check <- hypothesis_df %>%
+    hypothesis_empty_check <- hypothesis.df %>%
       dplyr::pull(hypothesis)
 
     hypothesis_empty <- purrr::is_empty(hypothesis_empty_check)
 
     if (!(hypothesis_empty)) {
       ## Entity extraction
-      entities <- entity_extraction(hypothesis_df)
+      entities <- entity_extraction(hypothesis.df)
 
       # Test if empty
       empty_entity_check <- entities %>%
@@ -135,21 +135,32 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
 
       if (!(entity_empty)) {
         # Causality classification
-        causality_class <- causality_classification(hypothesis_df)
+        causality_class <- causality_classification(hypothesis.df)
         causality_class <- data.frame(causality_class)
 
         # Direction class
-        direction_class <- direction_classification(hypothesis_df)
+        direction_class <- direction_classification(hypothesis.df)
         direction_class <- data.frame(direction_class)
 
         # Compile table
         iter.df <- compile_table(
-          hypothesis = hypothesis_df,
+          hypothesis = hypothesis.df,
           entities   = entities,
           causality  = causality_class,
           direction  = direction_class,
           file_name  = file_name
           )
+
+        # Extract hypothesis tag
+        iter.df <- iter.df %>%
+          dplyr::mutate(
+            hypothesis = gsub(
+              pattern = "hypo (.*?):\\s*",
+              replacement = "",
+              x = hypothesis
+            )
+          )
+
 
         # Remove trailing commas from cause, effect (for aesthetics)
         iter.df$cause <- gsub(",$", "", iter.df$cause)

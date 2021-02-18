@@ -41,6 +41,7 @@ pdf_paths <- list.files(recursive = FALSE,
                        full.names = TRUE)
 print(pdf_paths)
 ```
+
 # Preceding Steps
 ## Process Text
 ```{r}
@@ -321,12 +322,13 @@ h_id <- hypothesis_004 %>%
 
 
 # Drop ~Hypo #:~ for entity extraction input
-hypothesis <- gsub(regex_hypo_marker_2,"", hypothesis_004)
-hypothesis
+# hypothesis_005 <- gsub(regex_hypo_marker_2,"", hypothesis_004)
+hypothesis_005 <- hypothesis_004
 ```
 
 ## Create Output Dataframe
 ```{r}
+hypothesis <- hypothesis_005
 
 # Create Dataframe with hypothesis number and hypothesis
 df_hypothesis <- data.frame(
@@ -352,6 +354,6 @@ df_hypothesis
 
 # Final Function
 ```{r}
-hypothesis_extraction(input_text)
+entity_extraction()
 ```
 
