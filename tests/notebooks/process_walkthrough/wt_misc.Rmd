@@ -212,7 +212,6 @@ h_segments.df_001a %>%
 
 
 # Reconstruct Segments
-
 Fix using stop word removed final stirng
 ```{r}
 i = 1

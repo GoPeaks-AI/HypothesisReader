@@ -248,13 +248,6 @@ iter.df <- iter.df %>%
             file_name, hypothesis_num, hypothesis, cause,
             effect, direction, causal_relationship
           ) %>%
-          dplyr::mutate(
-            direction = dplyr::if_else(
-              condition = direction == 1,
-              true      = "pos",
-              false     = "neg"
-              )
-          ) %>%
           purrr::modify_if(is.factor, as.character)
 
 iter.df
