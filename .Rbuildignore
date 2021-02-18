@@ -1,7 +1,11 @@
 ^renv$
 ^renv\.lock$
 ^CausalityExtraction\.Rproj$
+^.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^\.travis\.yml$
 ^\.github$
+^sample_documents$
+^inst/extdata/sample_documents$
+^README\.Rmd$
