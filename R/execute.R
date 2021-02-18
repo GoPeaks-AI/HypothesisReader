@@ -176,7 +176,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   output_df <- remove_pred(output_df)
 
   # Rename entity columns
-  output_df %>%
+  output_df <- output_df %>%
     dplyr::rename(
       variable_1 = cause,
       variable_2 = effect
