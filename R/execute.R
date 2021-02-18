@@ -7,6 +7,8 @@
 #' @param causality Output of [causality_classification()]
 #' @param direction Output of [direction_classification()]
 #' @param file_name File name of processed PDFs
+#'
+#' @noRd
 
 compile_table <- function(hypothesis, entities, causality,
                           direction, file_name) {
@@ -34,13 +36,6 @@ compile_table <- function(hypothesis, entities, causality,
     dplyr::select(
       file_name, hypothesis_num, hypothesis, cause,
       effect, direction, causal_relationship
-    ) %>%
-    dplyr::mutate(
-      direction = dplyr::if_else(
-        condition = direction == 1,
-        true      = "non_neg",
-        false     = "neg"
-      )
     ) %>%
     purrr::modify_if(is.factor, as.character)
 
@@ -71,7 +66,7 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
   # For R CMD Checks
   causal_relationship <- causality_pred <- cause <- direction <-  NULL
   direction_pred <- effect <- file_name <- h_id <- hypothesis <- NULL
-  hypothesis_num <- NULL
+  hypothesis_num <- variable_1 <- variable_2 <- NULL
 
   # Generate File or List of Files
   pdf_path <- c()
@@ -179,6 +174,13 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
 
   # Remove causality predictions if both entities are not generated
   output_df <- remove_pred(output_df)
+
+  # Rename entity columns
+  output_df %>%
+    dplyr::rename(
+      variable_1 = cause,
+      variable_2 = effect
+    )
 
   output_df
 

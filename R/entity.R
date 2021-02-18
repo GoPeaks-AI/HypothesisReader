@@ -341,6 +341,7 @@ entity_extraction_indv <- function(hypothesis) {
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
+#' @noRd
 
 entity_extraction <- function(hypothesis_df){
   # For R CMD Checks

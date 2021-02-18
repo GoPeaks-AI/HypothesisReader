@@ -8,7 +8,7 @@
 
 get_path_direction_model <- function() {
   system.file("extdata", "models",
-              "direction_classification.joblib",
+              "direction.joblib",
               package = 'CausalityExtraction')
 }
 
@@ -68,6 +68,7 @@ gen_direction_class <- function(model_input) {
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
+#' @noRd
 
 direction_classification <- function(hypothesis_df) {
   direction <- direction_pred <- NULL

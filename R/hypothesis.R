@@ -121,6 +121,7 @@ apply_fasttext_model <- function(input_text) {
 #' Hypothesis 1 appears after Hypothesis 1a, Hypothesis 1 is removed
 #'
 #' @param hypothesis_labels Vector of identified hypothesis labels
+#' @noRd
 
 unique_hypothesis_labels <- function(hypothesis_labels) {
   h_id <- hypothesis <- NULL
@@ -185,6 +186,7 @@ unique_hypothesis_labels <- function(hypothesis_labels) {
 #'
 #' @param input_text Processed input text, one sentence per vector element
 #' @param min_threshold Minimum threshold of tokens in a sentence.
+#' @noRd
 
 drop_hypothesis_below_min_threshold <- function(
   input_text,
@@ -246,6 +248,7 @@ drop_hypothesis_below_min_threshold <- function(
 #' @param input_text PDF text as processed by [process_text()].
 #' @param apply_model Boolean tag for whether to filter hypothesis statements
 #'  with the hypothesis classification model.
+#' @noRd
 
 hypothesis_extraction <- function(input_text, apply_model = FALSE){
   # For R CMD Checks

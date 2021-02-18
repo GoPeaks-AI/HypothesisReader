@@ -8,7 +8,7 @@
 
 get_path_causality_model <- function() {
   system.file("extdata", "models",
-              "causality_classification.joblib",
+              "causality.joblib",
               package = 'CausalityExtraction')
 }
 
@@ -68,6 +68,7 @@ gen_causality_class <- function(model_input) {
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
+#' @noRd
 
 causality_classification <- function(hypothesis_df) {
   causality <- causality_pred <- NULL
