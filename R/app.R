@@ -9,9 +9,6 @@
 h_warning <- paste("Hypotheses were not extracted from the",
                    "following uploaded documents:")
 
-# OPTIONS
-options(shiny.maxRequestSize = 10000*1024^2)
-
 # UI ---------------------------------------------------------------------------
 ui <- shiny::fluidPage(
   shiny::tags$head(
