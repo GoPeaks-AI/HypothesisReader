@@ -7,9 +7,8 @@
 #' a specific installation method. Note that the "virtualenv" method is not
 #' available on Windows.
 #'
-#' @param conda The path to a conda executable. Use "auto" to allow reticulate
-#' to automatically find an appropriate conda binary. See Finding Conda for
-#' more details.
+#' @param conda The path to a conda executable. Use "auto" to allow Reticulate
+#' to automatically find an appropriate conda binary.
 #'
 #' @export
 
