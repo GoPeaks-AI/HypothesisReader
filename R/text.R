@@ -666,6 +666,7 @@ fix_common_error_traps <- function(input_vector){
 #' * Causality classification
 #'
 #' @param input_path path to PDF file
+#' @noRd
 
 process_text <- function(input_path){
   pdf_to_text <- NULL
