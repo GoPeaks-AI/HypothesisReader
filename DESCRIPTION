@@ -1,13 +1,17 @@
 Package: CausalityExtraction
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.2.9000
+Title: Causal Knowledge Extraction from Scholarly Papers in Social Sciences
+Version: 0.0.3.9000
 Authors@R: 
     person(given = "Evan",
            family = "Canfield",
            role = c("aut", "cre"),
            email = "canfielder@gmail.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           comment = c(ORCID = "0000-0002-8943-028X"))
+Description: Extracts causal knowledge from academic papers utilizing the 
+ methods and procedures outlined in the <insert academic paper reference>. The 
+ package processes PDF documents into raw text (via Tika) and then extracts 
+ hypothesis or proposition statements along with the following key features: 
+ cause and effect entities, direction, and causal relationship.
 Config/reticulate:
   list(
     packages = list(
