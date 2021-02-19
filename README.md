@@ -14,7 +14,7 @@ For example, take the following sample hypothesis:
   
 _**Hypothesis 1: Commitment configuration is positively associated with firm performance.**_
 
-Once this hypothesis is extracted it is then reduced to it's key features, as shown below:
+After this hypothesis is extracted from the source academic paper, it is reduced to it's key features, as shown below:
 
 | Variable 1 | Variable 2 | Direction | Causality |
 | :--- | :--- | :--- | :--- |
