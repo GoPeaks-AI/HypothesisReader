@@ -12,16 +12,16 @@ The **CausalityExtraction** R package supports the analytic methods as described
   
 For example, take the following sample hypothesis:
   
-*Hypothesis 1: Commitment configuration is positively associated with firm performance.*
+_**Hypothesis 1: Commitment configuration is positively associated with firm performance.**_
 
 Once this hypothesis is extracted by the **CausalityExtraction** package, it is reduced to it's key features, shown below.
 
 | Variable 1 | Variable 2 | Direction | Causality |
-| :---: | :---: | :---: | :---: |
+| :--- | :--- | :--- | :--- |
 | commitment configuration | firm performance | pos | 0 |
 
 
-The **CausalityExtraction** package utilizes Python and R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package, and the following installation instructions will be based on the user choosing this method. If the user wants to manually perform these actions, information about the required Python version and Python package versions are described in [Configure Python Environment](#configure-python-environment).
+The **CausalityExtraction** package utilizes Python in addition to R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package. If the user wishes to manually set-up the Python connection, information about the required Python version and Python package versions are described in [Configure Python Environment](#configure-python-environment).
   
 # Installation
 ## Prerequisites
