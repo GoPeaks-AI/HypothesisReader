@@ -13,7 +13,7 @@
 #'
 #' @export
 
-install_CausalityExtraction <- function(method = "auto", conda = "auto") {
+InstallCausalityExtraction <- function(method = "auto", conda = "auto") {
   reticulate::py_install("joblib==1.0.0", method = method,
                          conda = conda, pip = TRUE)
 
@@ -21,9 +21,6 @@ install_CausalityExtraction <- function(method = "auto", conda = "auto") {
                          conda = conda, pip = TRUE)
 
   reticulate::py_install("numpy", method = method,
-                         conda = conda, pip = TRUE)
-
-  reticulate::py_install("pdfminer.six==20201018", method = method,
                          conda = conda, pip = TRUE)
 
   reticulate::py_install("scikit-learn==0.23.2", method = method,
