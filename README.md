@@ -4,13 +4,24 @@
   [![R-CMD-check](https://github.com/canfielder/CausalityExtraction/workflows/R-CMD-check/badge.svg)](https://github.com/canfielder/CausalityExtraction/actions)
   <!-- badges: end -->
 
-The **CausalityExtraction** R package supports the analytic methods as described in <insert academic paper>. The main action of this package is to extract any and all hypothesis and/or proposition statements found in the provided documents. Once these statements are extracted, the following information regarding each statement is determined:
+The **CausalityExtraction** R package supports the analytic methods as described in <insert academic paper>. The main action of this package is to extract any and all hypothesis and/or proposition statements found in the provided documents. Once these statements are extracted, the following key features are generated:
   
-  * Entities: Extract both the cause and the effect entities within the statement
-  * Causality: Classify if the hypothesis/proposition is a causal relationship
+  * Entities: Extract both the cause and the effect entities within the statement (labeled Variable 1/2)
   * Direction: Classify the direction of the statement (positive, negative, non-linear)
+  * Causality: Classify if the statement is a causal relationship (1: Causal; 0: Associative but not Causal)
+  
+For example, take the following sample hypothesis:
+  
+*Hypothesis 1: Commitment configuration is positively associated with firm performance.*
 
-The **CausalityExtraction** package utilizes Python and R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package, and the following installation instructions will be based on the user choosing this method. If the user wants to manually perform these actions, information about the required Python version and Python package versions are described in [#configure-python-environment].
+Once this hypothesis is extracted by the **CausalityExtraction** package, it is reduced to it's key features, shown below.
+
+| Variable 1 | Variable 2 | Direction | Causality |
+| :---: | :---: | :---: | :---: |
+| commitment configuration | firm performance | pos | 0 |
+
+
+The **CausalityExtraction** package utilizes Python and R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package, and the following installation instructions will be based on the user choosing this method. If the user wants to manually perform these actions, information about the required Python version and Python package versions are described in [Configure Python Environment](#configure-python-environment).
   
 # Installation
 ## Prerequisites
@@ -40,7 +51,7 @@ Once the package begins processing a PDF, it will search for the required Python
 
 After installation is complete, it is recommended the user restart the R session (Session > Restart R).
 
-**Note:** From the Miniconda documentation (https://docs.conda.io/en/latest/miniconda.html): “Miniconda is a free minimal installer for conda. It is a small, bootstrap version of Anaconda that includes only conda, Python, the packages they depend on, and a small number of other useful packages, including pip, zlib and a few others.”
+**Note:** From the [Miniconda documentation](https://docs.conda.io/en/latest/miniconda.html): “Miniconda is a free minimal installer for conda. It is a small, bootstrap version of Anaconda that includes only conda, Python, the packages they depend on, and a small number of other useful packages, including pip, zlib and a few others.”
 
 The [Reticulate](https://rstudio.github.io/reticulate/) package downloads a version of Miniconda containing Python 3.6.
 
