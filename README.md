@@ -10,7 +10,7 @@ The **CausalityExtraction** R package supports the analytic methods as described
   * Causality: Classify if the hypothesis/proposition is a causal relationship
   * Direction: Classify the direction of the statement (positive, negative, non-linear)
 
-The **CausalityExtraction** package utilizes Python and R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package, and the following installation instructions will be based on the user choosing this method. If the user wants to manually perform these actions, information about the required Python version and Python package versions are described in Section <insert section>.
+The **CausalityExtraction** package utilizes Python and R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package, and the following installation instructions will be based on the user choosing this method. If the user wants to manually perform these actions, information about the required Python version and Python package versions are described in [#configure-python-environment].
   
 # Installation
 ## Prerequisites
@@ -26,7 +26,7 @@ install.packages(“devtools”)
 ```
 
 ## Installing CausalityExtraction
-With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **CausalityExtraction** package can be installed wiby executing the following:
+With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **CausalityExtraction** package can be installed by executing the following:
 
 ```
 devtools::install_github("canfielder/CausalityExtraction")
@@ -34,7 +34,7 @@ devtools::install_github("canfielder/CausalityExtraction")
 
 ## Configure Python Environment
 ### Python Interpreter
-The **CausalityExtraction** package will automatically configure the Python environment, with minimal input by the user. Once the package is installed, all the user has to do is attempt to use the function *CausalityExtraction* or attempt to process a PDF document through the provided Shiny app, accessed from the function *LaunchApp* (see Usage below).
+The **CausalityExtraction** package will automatically configure the Python environment, with minimal input by the user. Once the package is installed, all the user has to do is attempt to use the function *CausalityExtraction* or attempt to process a PDF document through the provided Shiny app, accessed from the function *LaunchApp* (see [Usage](#usage) below).
 
 Once the package begins processing a PDF, it will search for the required Python configuration. If it has not yet been set up, the [Reticulate](https://rstudio.github.io/reticulate/) package will prompt the user to install the Miniconda installer. The prompt will generate on the RStudio console. To install, the user must enter **y**.
 
@@ -47,22 +47,22 @@ The [Reticulate](https://rstudio.github.io/reticulate/) package downloads a vers
 ### Python Packages
 The **CausalityExtraction** package is constructed to work with the following Python packages:
 
-* Joblib - Version 1.0.0
-* NLTK – Version 3.5
-* Numpy – Version 1.19.2
-* Scikit Learn – Version 0.23.2
-* Tensorflow – Version 2.4.0
+* [Joblib - Version 1.0.0](https://pypi.org/project/joblib/1.0.0/)
+* [Natural Language Toolkit (NLTK) – Version 3.5](https://pypi.org/project/nltk/3.5/)
+* [NumPy – Version 1.19.2](https://pypi.org/project/numpy/1.19.2/)
+* [Scikit-Learn – Version 0.23.2](https://pypi.org/project/scikit-learn/0.23.2/)
+* [TensorFlow – Version 2.4.0](https://pypi.org/project/tensorflow/2.4.0/)
 
 # Usage
-The main action of the **CausalityExtraction** package (as described above) is accomplished through two functions: *CausalityExraction* and *LauchApp*.
+The main action of the **CausalityExtraction** package (as described above) is accomplished through two functions: *CausalityExtraction* and *LauchApp*.
 
 _**CausalityExtraction**_
 
-This fuction is the code-based method for performing the above action. This function accepts PDF file(s), or a folder containing PDF file(s), and then returns a table containing the information described above. 
+This function is the code-based method for performing the above action. This function accepts PDF file(s), or a folder containing PDF file(s), and then returns a table containing the information described above. 
 
 _**LaunchApp**_
 
-This function provides a Graphical User Interface through a Shiny appto perform the above action. The table with the processed information can then be downloaded as a CSV file. Executing *LauchApp()* from the RStudio console will launch a Shiny app. The app allows the user to select PDF files for upload and processing. 
+This function provides a Graphical User Interface through a Shiny app to perform the above action. The table with the processed information can then be downloaded as a CSV file. Executing *LauchApp()* from the RStudio console will launch a Shiny app. The app allows the user to select PDF files for upload and processing. 
 
 **Note:** The app launches with the local machine’s default web browser. If the Shiny app does not launch after running this function, please check your browser's pop-up settings.
 
