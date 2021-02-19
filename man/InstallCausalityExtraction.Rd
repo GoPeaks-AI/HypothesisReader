@@ -12,9 +12,8 @@ method that will work in the local environment. Change the default to force
 a specific installation method. Note that the "virtualenv" method is not
 available on Windows.}
 
-\item{conda}{The path to a conda executable. Use "auto" to allow reticulate
-to automatically find an appropriate conda binary. See Finding Conda for
-more details.}
+\item{conda}{The path to a conda executable. Use "auto" to allow Reticulate
+to automatically find an appropriate conda binary.}
 }
 \description{
 Executes the complete causality extraction process.
