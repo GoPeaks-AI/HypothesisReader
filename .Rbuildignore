@@ -9,3 +9,6 @@
 ^sample_documents$
 ^inst/extdata/sample_documents$
 ^README\.Rmd$
+^.Rprofile\.Rmd$
+^.Rhistory\.Rmd$
+^.gitignore\.Rmd$
