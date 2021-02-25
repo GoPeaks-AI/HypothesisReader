@@ -1,0 +1,120 @@
+---
+title: "Text Processing - Tiak Batch"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement batch processing with Tika.
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+## Assisting Functions
+```{r}
+#' Inspect Text String
+inspect <- function(x, m = 100, span = 20) {
+  n = m + span - 1
+  x[m:n]
+  
+}
+```
+
+## Data
+```{r}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+
+# Batch Process Text
+## Select Files
+```{r}
+n = 6
+input_path <- pdf_paths[1:8]
+input_path
+```
+## Define File Names
+```{r}
+file_names <- NULL
+
+if (is.null(file_names)){
+  file_names <- basename(input_path)
+}
+file_names
+```
+
+## Convert Files to Text
+```{r}
+input_text <- rtika::tika_text(input = input_path)
+```
+
+## Verify PDF Conversion Was Successfull
+### Function
+```{r}
+text_conversion_test <- function(input_text) {
+  rmv_newline <- NULL
+
+  # Remove newlines symbols
+  text_newline_removed = gsub(
+    pattern = "\n",
+    replacement = "",
+    x = input_text
+  )
+
+  # Determine index of files with no text after newline removal
+  idx_failed_conversion <- c()
+  for (i in seq_along(text_newline_removed)) {
+
+    if (nchar(text_newline_removed[i]) < 1) {
+      idx_failed_conversion <- c(idx_failed_conversion, i)
+    }
+  }
+
+  # Return
+  idx_failed_conversion
+
+}
+```
+
+### Execute
+```{r}
+idx_text_conv_fail <- text_conversion_test(input_text)
+
+  # Send message to console if text conversion failed
+  for (i in idx_text_conv_fail) {
+    status_message_conversion <- paste(
+      "File ",
+      file_names[i],
+      ": File failed to convert to text.",
+      sep = ""
+    )
+
+    message(status_message_conversion)
+  }
+
+```
+
+```{r}
+text_range <- 1:length(input_text)
+
+logical_text_conv <- !text_range %in% idx_text_conv_fail
+input_text_drop <- input_text[logical_text_conv]
+length(input_text_drop)
+```
+
+

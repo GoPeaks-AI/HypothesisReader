@@ -21,19 +21,6 @@ The purpose of this notebook is to test how to implement the Entity Extraction m
   )
 ```
 
-## Source Files
-The following imports functions defined in the sourced R scripts.
-```{r}
-# # Import All Scripts
-# script_path <- "../R/"
-# file_paths <- list.files(recursive = TRUE,
-#                          path = script_path, pattern = ".R",
-#                          full.names = TRUE)
-#
-# for (file in file_paths){
-#   source(file)
-# }
-```
 
 
 ## Assisting Functions

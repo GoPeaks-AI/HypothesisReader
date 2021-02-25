@@ -1,0 +1,37 @@
+---
+title: "Walkthrough: Entity Model Storage"
+author: "Evan Canfield"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test miscellaneous parts of the package.
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+# Load Entity Model
+```{r}
+
+# tf_model <- load_entity_model()
+```
+
+```{r}
+# usethis::use_data(tf_model, internal = TRUE)
+```
+
+```{r}
+load(tf_model.rda)
+```
+
