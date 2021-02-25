@@ -1,0 +1,455 @@
+---
+title: "Complete Process Performance Walkthrough"
+author: "Evan Canfield"
+date: "12/30/2020"
+output:
+  html_document:
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+The purpose of this notebook is to test how to implement the complete Causality Extraction NLP project.
+
+# Import
+## Libraries
+```{r import_libraries}
+  if (!require(pacman)) {install.packages('pacman')}
+  p_load(
+    dplyr
+  )
+```
+
+
+## Regex
+```{r}
+regex_hypo_marker <- "<split>hypo (.*?):"
+```
+
+## Data
+```{r import_data}
+folder_path <- "./../../../inst/extdata/sample_documents/"
+pdf_paths <- list.files(recursive = FALSE, 
+                       path = folder_path, 
+                       pattern = ".pdf", 
+                       full.names = TRUE)
+print(pdf_paths)
+```
+# Steps
+
+* Text Pre-processing
+* Hypothesis Extraction
+* Entity Extraction
+* Causality Classification
+* Final Output Table
+
+
+## Create File List
+### Select PDFs
+```{r}
+n = 1
+input_path <- pdf_paths[5:8]
+input_path
+
+```
+
+### Create file names
+```{r}
+file_names <- NULL
+# Create vector of file names if necessary
+  if (is.null(file_names)){
+    file_names <- basename(input_path)
+  }
+
+file_names
+```
+## Convert Texxt to PDF
+### Execute conversion
+```{r}
+# Convert PDF to text
+text_raw <- pdf_to_text(input_path)
+```
+
+### Check for failed text conversion
+```{r}
+# Check for failed text conversion
+idx_pdf2text_fail <- text_conversion_test(text_raw)
+idx_pdf2text_fail
+```
+
+### Create Vector of files that did not convert
+```{r}
+ # Create vector of file names which did not convert
+  text_idx_range <- 1:length(text_raw)
+  log_pdf2text <- !(text_idx_range %in% idx_pdf2text_fail)
+  log_pdf2text
+  names_pdf2text_fail <- file_names[!log_pdf2text]
+  names_pdf2text_fail
+  # Message console all files which failed to convert
+  for (file_name in names_pdf2text_fail) {
+    # Create message
+    status_message_pdf2text <- paste(
+      file_name,
+      ": File failed to convert to text.",
+      sep = ""
+    )
+    # Output message
+    message(status_message_pdf2text)
+  }
+  
+log_pdf2text
+```
+
+
+### Remove PDFs which failed text conversion
+```{r}
+  # Drop files names and extracted text if conversion failed
+  text_raw <- text_raw[log_pdf2text]
+  file_names <- file_names[log_pdf2text]
+  file_names
+```
+
+## Create Causality Extraction Table
+### Initializations
+```{r}
+# Initialize output vector
+lst_output <- vector(
+  mode   = "list",
+  length = length(text_raw)
+  )
+
+  # Initialize vectors for output messages
+  names_h_detect_fail <- c()
+  names_process_complete <- c()
+
+```
+
+
+### Generate list of Dataframes
+```{r}
+for (i in seq_along(text_raw)) {
+
+    # Define text and file name
+    text = text_raw[i]
+    file_name = file_names[i]
+
+    # Process raw text
+    text_processed <- process_text(text)
+
+    # Hypothesis Classification
+    hypothesis.df <- hypothesis_extraction(text_processed, apply_model = FALSE)
+
+    # Test if hypothesis detected
+    hypothesis.v <- hypothesis.df %>%
+      dplyr::pull(hypothesis)
+
+    hypothesis_detected <- !(purrr::is_empty(hypothesis.v))
+
+    if (hypothesis_detected) {
+      # Entity extraction
+      entities <- entity_extraction(hypothesis.df)
+
+      # Causality classification
+      causality_class <- causality_classification(hypothesis.df)
+      causality_class <- data.frame(causality_class)
+
+      # Direction class
+      direction_class <- direction_classification(hypothesis.df)
+      direction_class <- data.frame(direction_class)
+
+      # Compile table
+      iter.df <- compile_table(
+        hypothesis = hypothesis.df,
+        entities   = entities,
+        causality  = causality_class,
+        direction  = direction_class,
+        file_name  = file_name
+        )
+
+        # Extract hypothesis tag
+        iter.df <- iter.df %>%
+          dplyr::mutate(
+            hypothesis = gsub(
+              pattern = "hypo (.*?):\\s*",
+              replacement = "",
+              x = hypothesis
+            )
+          )
+
+
+        # Remove trailing commas from cause, effect (for aesthetics)
+        iter.df$cause <- gsub(",$", "", iter.df$cause)
+        iter.df$effect <- gsub(",$", "", iter.df$effect)
+
+        # Store in List
+        lst_output[[i]] <- iter.df
+
+        # Store file name
+        names_process_complete <- c(names_process_complete, file_name)
+
+    } else {
+
+      # Store file name
+      names_h_detect_fail <- c(names_h_detect_fail, file_name)
+    }
+
+}
+```
+
+### Output Messages
+#### Define Inputs
+```{r}
+    message.v <- c(
+      "PDF file did not convert to text:",
+      "Hypothesis/Proposition not detected:",
+      "Process successfully complete:"
+    )
+
+    list_file_names <- list(
+      "text" = names_pdf2text_fail,
+      "hypothesis" = names_h_detect_fail,
+      "success" = names_process_complete
+    )
+```
+
+```{r}
+
+message("PROCESS STATUS REPORT")
+    # Output messages
+    for (i in seq_along(message.v)){
+      # print(list_file_names[[i]])
+
+      output_message(
+        message = message.v[i],
+        file_names = list_file_names[[i]]
+        )
+
+    }
+```
+
+
+### Compress List into single dataframe
+```{r}
+# Group Output Table for All Files into one table
+output_df <- dplyr::bind_rows(lst_output)
+
+output_df %>% glimpse()
+```
+
+
+### Mask Predictions
+```{r}
+# Remove causality predictions if both entities are not generated
+output_df <- remove_pred(output_df)
+
+output_df %>% glimpse()
+```
+
+### Rename Columns
+```{r}
+# Rename entity columns
+output_df <- output_df %>%
+  dplyr::rename(
+    variable_1 = cause,
+    variable_2 = effect
+  )
+
+output_df %>% glimpse()
+```
+
+### Store in List
+```{r}
+
+  output_list <-
+    list(
+      "table" = output_df,
+      "file_names" = list_file_names
+    )
+
+```
+
+### Extract Table
+```{r}
+output.df <- output_list[["table"]]
+
+output.df
+```
+
+### Output Process Report
+```{r}
+files <- output_list[["file_names"]]
+
+intro_message <- c(
+  "File(s) did not successfully convert to text:" ,
+  "Hypothesis/Proposition(s) were not detected:"
+)
+i = 2
+message <- intro_message[i]
+text = files[[i]]
+
+text
+
+# Generate HMTL list format
+html_files <- knitr::combine_words(
+  words = text,
+  before = '<li>',
+  after = "</li>",
+  and = " ",
+  sep = " ")
+
+# Add italics to list
+html_files <- paste("<i>", html_files, "</i>", sep = " ")
+
+html_files
+
+html_files <- paste("<ul>", html_files, "</ul>", sep = "")
+
+html_files
+
+# Bold Message
+html_message <- paste("<b>", message, "</b>", sep = " ")
+
+html_compile <- paste(html_message, html_files, sep = "")
+
+html_compile
+
+html_compile <- paste(html_compile, "\n")
+
+shiny::HTML("ui {
+          padding-left: 1.1em;
+          list-style-type: square;
+        }")
+shiny::HTML(html_compile)
+```
+
+
+
+```{r}
+gen_file_list_html <- function(message, files){
+  # Convert file names into list
+  html_files <- knitr::combine_words(
+    words = files,
+    before = '<li>',
+    after = "</li>",
+    and = " ",
+    sep = " ")
+  
+  # Apply italics to file list
+  html_files <- paste(
+    "<i>", 
+    html_files, 
+    "</i>", 
+    sep = " "
+    )
+  
+  # Apply un-ordered list tag to list
+  html_files <- paste(
+    "<ul>", 
+    html_files, 
+    "</ul>", 
+    sep = " "
+    )
+  
+  # Apply formatting to list preceding message
+  html_message <- paste(
+    "<h3>", 
+    message, 
+    "</h3>", 
+    sep = ""
+    )
+  
+  # Combine message and list
+  html_compile <- paste(
+    html_message, 
+    html_files, 
+    sep = ""
+    )
+  
+  # Encase in a section
+  html_compile <- paste(
+    "<section>", 
+    html_compile, 
+    "</section>", 
+    sep = ""
+    )
+  
+  html_compile
+
+}
+```
+
+```{r}
+intro_message <- list(
+  "text" = "File(s) did not successfully convert to text:" ,
+  "hypothesis" = "Hypothesis/Proposition(s) were not detected:",
+  "success" = "Process successfully complete:"
+)
+
+files <- output_list[["file_names"]]
+
+conditions_detected <- names(files)
+conditions_detected
+
+
+output_html <- c()
+for (condition in conditions_detected){
+  
+  if (condition == "success") next
+  
+  message <- intro_message[[condition]]
+  text = files[[condition]]
+  
+  # Generate output html
+  html_string <- gen_html(message, text)
+  
+  # Append to list
+  output_html <- c(output_html, html_string)
+}
+output_html
+```
+
+
+```{r}
+shiny::HTML("ui {
+          padding-left: 1.1em;
+          list-style-type: square;
+        }")
+shiny::HTML(output_html)
+```
+
+
+
+
+# Test Function
+## Single PDF
+```{r function_file_single, eval  = FALSE}
+m <- 1
+n <- 7
+input_paths <- pdf_paths[m:n]
+causality_extraction_complete(file_path = input_paths)
+CausalityExtraction(file_path = input_paths)
+```
+
+```{r}
+m <- 1
+n <- 7
+input_paths <- pdf_paths
+input_paths
+x <- CausalityExtraction(file_path = input_paths)
+
+x
+```
+
+
+# List of Multiple PDFs
+```{r function_file_multiple, eval  = FALSE}
+m <- 1
+n <- 7
+input_paths <- pdf_paths[m:n]
+causality_extraction_complete(file_path = input_paths)
+CausalityExtraction(file_path = input_paths)
+```
+
