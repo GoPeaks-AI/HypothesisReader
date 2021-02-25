@@ -2,6 +2,9 @@
 joblib <- nltk <- nltk_stem <- np <- tf <- NULL
 
 .onLoad <- function(libname, pkgname) {
+  # Set TensorFlow environmental variable to quiet output on start-up
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 3)
+
   # Load Python Modules
   # use super-assignment to update global reference
   joblib    <<- reticulate::import("joblib",                delay_load = TRUE)
