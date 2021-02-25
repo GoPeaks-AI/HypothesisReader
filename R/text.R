@@ -42,17 +42,26 @@ regex_double_tag <- paste(
 regex_return_num <- "(\\d)+"
 
 # Functions --------------------------------------------------------------------
-#' Retrieve path to python script
+#' Convert PDF to text
 #'
-#' Retrieves the path to python script for converting PDF files to text.
+#' Converts PDF files to text using Tika.
+#'
+#' @param pdf_paths Vector of file paths to input pdfs
 #'
 #' @noRd
 
-get_path_pdf2text <- function() {
-  system.file("python", "pdf_to_text.py",
-              package = 'CausalityExtraction')
-}
+pdf_to_text <- function(pdf_paths) {
+  text_raw <- NULL
 
+  message("Batch PDF conversion to text: Start")
+
+  text_raw <- rtika::tika_text(input = pdf_paths)
+
+  message("Batch PDF conversion to text: Complete")
+
+  # Return
+  text_raw
+}
 
 #' Remove string by regex expression
 #'
@@ -200,7 +209,6 @@ concat_hypen_vector <- function(input_vector){
 #'
 #' @param input.str input string of text
 #' @noRd
-#'
 
 reduce_to_id <- Vectorize(USE.NAMES = FALSE, FUN =
   function(input.str) {
@@ -656,6 +664,38 @@ fix_common_error_traps <- function(input_vector){
 }
 
 
+#' Detect if text extraction of PDF failed.
+#'
+#' Examines all text from PDFs returns index of PDF which did not convert to
+#' text.
+#'
+#' @param input_text Converted text of all input PDF documents
+#' @noRd
+
+text_conversion_test <- function(input_text) {
+  rmv_newline <- NULL
+
+  # Remove newlines symbols
+  text_newline_removed = gsub(
+    pattern = "\n",
+    replacement = "",
+    x = input_text
+  )
+
+  # Determine index of files with no text after newline removal
+  idx_failed_conversion <- c()
+  for (i in seq_along(text_newline_removed)) {
+
+    if (nchar(text_newline_removed[i]) < 1) {
+      idx_failed_conversion <- c(idx_failed_conversion, i)
+    }
+  }
+
+  # Return
+  idx_failed_conversion
+
+}
+
 #' Process PDF text
 #'
 #' Wrapper function. Executes all steps in the process flow converting raw
@@ -665,30 +705,22 @@ fix_common_error_traps <- function(input_vector){
 #' * Entity extraction
 #' * Causality classification
 #'
-#' @param input_path path to PDF file
+#' @param text_raw Raw PDF converted text
 #' @noRd
 
-process_text <- function(input_path){
+process_text <- function(text_raw){
   pdf_to_text <- NULL
-  # Convert --------------------------------------------------------------------
-
-  ## Use PDFminer.six high level function
-  # input_text <- pdfminer$extract_text(input_path)
-
-  ## rTika
-  input_text <- rtika::tika_text(input = input_path)
-
 
   # Vectorize ------------------------------------------------------------------
   ## Split text into character vector
-  processing_text <- input_text %>%
+  text_processed <- text_raw %>%
     stringr::str_split(pattern = "\n") %>%
     unlist()
 
   # Whitespace -----------------------------------------------------------------
   # Trim excess - outside and inside strings
-  processing_text <- stringr::str_trim(string = processing_text)
-  processing_text <- stringr::str_squish(string = processing_text)
+  text_processed <- stringr::str_trim(string = text_processed)
+  text_processed <- stringr::str_squish(string = text_processed)
 
   # References / Bibliography --------------------------------------------------
   ## Remove any text in DF document which occurs after the Reference/
@@ -696,8 +728,8 @@ process_text <- function(input_path){
   ### Return Logical Vector
   logical_section <- ifelse(
     test = (
-      tolower(processing_text) == "references" |
-      tolower(processing_text) == "bibliography"
+      tolower(text_processed) == "references" |
+      tolower(text_processed) == "bibliography"
     ),
     yes  = TRUE,
     no   = FALSE)
@@ -706,47 +738,47 @@ process_text <- function(input_path){
   ### identified.
   if (any(logical_section)){
     index <- min(which(logical_section == TRUE))
-    processing_text <- processing_text[1:index-1]
+    text_processed <- text_processed[1:index-1]
   }
 
   # Numbers and Symbols --------------------------------------------------------
   ## Drop lines with only numbers or symbols
-  processing_text <- remove_if_detect(
-    input_vector   = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector   = text_processed,
     regex          = regex_letters,
     logical_method = "inverse"
   )
 
   # n < 1 ----------------------------------------------------------------------
   ## Drop elements with length of 1 or less
-  logical_length <- nchar(processing_text) > 1
-  processing_text <- processing_text[logical_length]
+  logical_length <- nchar(text_processed) > 1
+  text_processed <- text_processed[logical_length]
 
   # Drop any NA elements
-  processing_text <- processing_text[!is.na(processing_text)]
+  text_processed <- text_processed[!is.na(text_processed)]
 
   # Months ---------------------------------------------------------------------
   ## Remove elements which start with a month
-  processing_text <- remove_if_detect(
-    input_vector  = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector  = text_processed,
     remove_string = toupper(month.name),
     location      = "start"
   )
 
   ## Drop any NA elements
-  processing_text <- processing_text[!is.na(processing_text)]
+  text_processed <- text_processed[!is.na(text_processed)]
 
   # Hyphen Concatenation -------------------------------------------------------
   ## Concatenate adjacent elements if initial element ends With hyphen
-  processing_text <- concat_hypen_vector(processing_text)
+  text_processed <- concat_hypen_vector(text_processed)
 
   # Downloading ----------------------------------------------------------------
   ## Remove elements which contain text related to downloading documents.
 
   download_vec <- c('This content downloaded','http','jsto','DOI','doi')
 
-  processing_text <- remove_if_detect(
-    input_vector  = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector  = text_processed,
     remove_string = download_vec,
     location      = "any"
   )
@@ -754,8 +786,8 @@ process_text <- function(input_path){
   # IP Address -----------------------------------------------------------------
   ## Remove elements which contain IP addresses
 
-  processing_text <- remove_if_detect(
-    input_vector = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector = text_processed,
     regex        = regex_ip,
     location     = "any"
   )
@@ -766,55 +798,55 @@ process_text <- function(input_path){
   # line_split_indicator <- " -LINESPLIT-"
   #
   # ### Concatenate all vector elements, separated by line split
-  # processing_text <- stringr::str_c(
-  #   processing_text,
+  # text_processed <- stringr::str_c(
+  #   text_processed,
   #   collapse = line_split_indicator
   # )
   #
   # # Remove content within parenthesis
-  # processing_text <- stringr::str_remove_all(
-  #   string  = processing_text,
+  # text_processed <- stringr::str_remove_all(
+  #   string  = text_processed,
   #   pattern = regex_parens
   # )
   #
   # # Split single string back into character vectors
-  # processing_text <- stringr::str_split(
-  #   string  = processing_text,
+  # text_processed <- stringr::str_split(
+  #   string  = text_processed,
   #   pattern = line_split_indicator) %>%
   #   unlist()
 
   # Empty Vectors --------------------------------------------------------------
   ## Drop empty vectors
-  processing_text <- processing_text[processing_text!=""]
+  text_processed <- text_processed[text_processed!=""]
 
   ## Drop NA elements
-  processing_text <- processing_text[!is.na(processing_text)]
+  text_processed <- text_processed[!is.na(text_processed)]
 
   # Numbers and Symbols (Second Time) ------------------------------------------
   ## Drop lines with only numbers or symbols
-  processing_text <- remove_if_detect(
-    input_vector   = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector   = text_processed,
     regex          = regex_letters,
     logical_method = "inverse"
   )
 
   # Common Issues --------------------------------------------------------------
   ## Remove Periods From Common Abbreviations
-  processing_text <- remove_period_abbr(processing_text)
+  text_processed <- remove_period_abbr(text_processed)
 
   ## Adjust common error traps
-  processing_text <- fix_common_error_traps(processing_text)
+  text_processed <- fix_common_error_traps(text_processed)
 
   # Standardize Hypothesis/Propositions-----------------------------------------
   ## Hypothesis
-  processing_text <- standardize_hypothesis_proposition(
-    input.str  = processing_text
+  text_processed <- standardize_hypothesis_proposition(
+    input.str  = text_processed
   )
 
   ## Test if any hypothesis standardized
   n_hypothesis_test <- sum(
     stringr::str_count(
-      string = processing_text,
+      string = text_processed,
       pattern = "<split>hypo"
       )
     )
@@ -822,30 +854,30 @@ process_text <- function(input_path){
   ## If no hypothesis detected, attempt to standardize hypothesis/proposition
   ## formats without number/labels
   if (n_hypothesis_test == 0) {
-    processing_text <- standardize_hypothesis_proposition_no_num(
-      input_vector  = processing_text
+    text_processed <- standardize_hypothesis_proposition_no_num(
+      input_vector  = text_processed
     )
   }
 
   ## Remove Duplicate Tags
-  processing_text <- remove_duplicate_tag(
-    input.str = processing_text
+  text_processed <- remove_duplicate_tag(
+    input.str = text_processed
   )
 
   # Remove trailing period for standardizes hypothesis tags
-  processing_text <- remove_period(
-    input.str = processing_text
+  text_processed <- remove_period(
+    input.str = text_processed
   )
 
   # Tokenize Sentences ---------------------------------------------------------
   ## Pass 1 - Tokenizers
-  processing_text <- stringr::str_c(
-    processing_text,
+  text_processed <- stringr::str_c(
+    text_processed,
     collapse = " "
   )
 
-  processing_text <- tokenizers::tokenize_sentences(
-    processing_text,
+  text_processed <- tokenizers::tokenize_sentences(
+    text_processed,
     strip_punct = FALSE) %>%
     unlist()
 
@@ -853,64 +885,64 @@ process_text <- function(input_path){
   ### Instances of sentences not being correctly tokenized have been seen
   ### using the Tokenizer method. This additional sentence tokenization step
   ### has been added to compensate
-  processing_text <- stringr::str_split(
-    string  = processing_text,
+  text_processed <- stringr::str_split(
+    string  = text_processed,
     pattern = "\\.") %>%
     unlist()
 
   ## Drop empty vectors
-  processing_text <- processing_text[processing_text!=""]
+  text_processed <- text_processed[text_processed!=""]
 
 
   ## Replace double spaces with single
-  processing_text <- stringr::str_replace_all(
-    string      = processing_text,
+  text_processed <- stringr::str_replace_all(
+    string      = text_processed,
     pattern     = "  ",
     replacement = " "
   )
 
   # Normalize Case -------------------------------------------------------------
   ## Set everything to lowercase
-  processing_text <- tolower(processing_text)
+  text_processed <- tolower(text_processed)
 
   # Downloading (Second Time) --------------------------------------------------
   ## Remove elements which contain terms related to downloading files
-  processing_text <- remove_if_detect(
-    input_vector  = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector  = text_processed,
     remove_string = download_vec,
     location      = "any"
   )
 
   # Numbers and Symbols (Third Time) -------------------------------------------
   ## Drop lines with only numbers or symbols
-  processing_text <- remove_if_detect(
-    input_vector   = processing_text,
+  text_processed <- remove_if_detect(
+    input_vector   = text_processed,
     regex          = regex_letters,
     logical_method = "inverse"
   )
 
   # Break out sentences with multiple hypothesis tags --------------------------
-  processing_text = break_out_hypothesis_tags(input.v = processing_text)
+  text_processed = break_out_hypothesis_tags(input.v = text_processed)
 
   # Misc Text Actions ----------------------------------------------------------
   ## Replace double colons
-  processing_text <- stringr::str_replace_all(
-    string      = processing_text,
+  text_processed <- stringr::str_replace_all(
+    string      = text_processed,
     pattern     = ": :",
     replacement = ":"
   )
 
   ## Remove extra white space
-  processing_text <- stringr::str_squish(
-    string = processing_text
+  text_processed <- stringr::str_squish(
+    string = text_processed
   )
 
   ## Replace colon/period instances (: .)
-  processing_text <- stringr::str_replace_all(
-    string      = processing_text,
+  text_processed <- stringr::str_replace_all(
+    string      = text_processed,
     pattern     = ": \\.",
     replacement = ":"
   )
 
-  processing_text
+  text_processed
 }

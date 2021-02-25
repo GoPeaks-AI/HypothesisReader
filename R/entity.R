@@ -323,13 +323,6 @@ entity_extraction_indv <- function(hypothesis) {
   ## Convert Indexes to Text
   entity_text_output <- index_to_entity(hypothesis, index_entities)
 
-  ## Remove hypothesis tag, if detected
-  entity_text_output <- gsub(
-    pattern     = "hypo (.*?):\\s*",
-    replacement = "",
-    x           =  entity_text_output
-  )
-
   entity_text_output
 }
 

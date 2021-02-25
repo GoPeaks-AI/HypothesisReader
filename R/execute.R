@@ -1,3 +1,43 @@
+#' Message to console
+#'
+#' Outputs formatted message to console
+#'
+#' @param file_names Character vector of files names
+#' @param message String of message
+#'
+#' @noRd
+
+output_message <- function(file_names, message) {
+  # For RMD Checks
+
+  # Apply new line and spaces to file names
+  file_names <- paste("  ", file_names, "\n")
+
+  # Define message text
+  text <- paste0(
+    message,
+    "\n",
+    collapse = ""
+  )
+
+  # Concatenate file names
+  file_names <- paste0(
+    file_names,
+    collapse = ""
+  )
+
+  # Combine text with file names
+  output_message <- paste(
+    text,
+    file_names,
+    sep = ""
+    )
+
+  # Send message to console
+  message(output_message)
+
+}
+
 #' Compile final table
 #'
 #' Compiles all calculated values into single table
@@ -43,9 +83,11 @@ compile_table <- function(hypothesis, entities, causality,
 }
 
 
-#' Causality extraction process
+#' Causality extraction process - All Outputs
 #'
-#' Executes the complete causality extraction process.
+#' Executes the complete causality extraction process. This function outputs
+#'  the causality extraction output table as well as lists of input files
+#'  which failed to convert to text, and which did not contain any hypotheses.
 #'
 #' @param file_path Path or character vector of paths to PDF documents to be
 #'  processed.This parameter or **folder_path** must be provided. If both
@@ -59,16 +101,23 @@ compile_table <- function(hypothesis, entities, causality,
 #'  parameters are provided, the input in **file_path** will be processed and
 #'  this parameter will be ignored.
 #'
-#'@export
+#' @param file_names (Optional) Character vector of file names. This parameter
+#'  provides names for each file. This is to be used primarily to pass the
+#'  correct file name when using the shiny app. Shiny renames the file names
+#'  inside file paths after upload.
+#'
+#'@noRd
 
 
-CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
+causality_extraction_complete <- function(file_path = NULL, folder_path = NULL,
+                                file_names = NULL) {
   # For R CMD Checks
   causal_relationship <- causality_pred <- cause <- direction <-  NULL
-  direction_pred <- effect <- file_name <- h_id <- hypothesis <- NULL
-  hypothesis_num <- variable_1 <- variable_2 <- NULL
+  direction_pred <- effect <- error <- file_name <-  NULL
+  file_names_hy_not_detected <- file_names_text_conv_fail <- h_id <- NULL
+  hypothesis <- hypothesis_num <- text_raw <- variable_1 <- variable_2 <- NULL
 
-  # Generate File or List of Files
+  # Create File List -----------------------------------------------------------
   pdf_path <- c()
   if (is.not.null(file_path)){
     pdf_paths <- file_path
@@ -84,115 +133,217 @@ CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
     warning("File name(s) or folder path required.")
   )
 
-  # Initialize
+  # Create vector of file names if necessary
+  if (is.null(file_names)){
+    file_names <- basename(pdf_paths)
+  }
+
+  # Convert PDF to Text --------------------------------------------------------
+  text_raw <- pdf_to_text(pdf_paths)
+
+  # Check for failed text conversion
+  idx_pdf2text_fail <- text_conversion_test(text_raw)
+
+  # Create vector of file names which did not convert
+  text_idx_range <- 1:length(text_raw)
+  log_pdf2text <- !(text_idx_range %in% idx_pdf2text_fail)
+  names_pdf2text_fail <- file_names[!log_pdf2text]
+
+  # Drop files names and extracted text if conversion failed
+  text_raw <- text_raw[log_pdf2text]
+  file_names <- file_names[log_pdf2text]
+
+  # Causality Extraction Process -----------------------------------------------
+  message("")
+  message("Causality Extraction Process: Start")
+
+  # Initialize output vector
   lst_output <- vector(
     mode   = "list",
-    length = length(pdf_paths)
-    )
-  i = 1
-  for (pdf in pdf_paths) {
-
-    file_name <- basename(pdf)
-
-    ## Text Pre-processing
-    ### Wrap in tryCatch to catch failed pdf to text conversions
-    possible_error <- tryCatch({
-      text_processed <- process_text(pdf)
-
-    },
-    error = function(e) {
-      e
-      error_statement <- paste0("Error. File ",
-                                file_name,
-                                " could not be converted into text.")
-      message(error_statement)
-
-    }
+    length = length(text_raw)
     )
 
-    ### Skip processing if error observed
-    if(inherits(possible_error, "error")) next
+  # Initialize vectors for output messages
+  names_h_detect_fail <- c()
+  names_process_complete <- c()
 
-    ## Hypothesis Classification
+  for (i in seq_along(text_raw)) {
+
+    # Define text and file name
+    text <- text_raw[i]
+    file_name <- file_names[i]
+
+    # Process raw text
+    text_processed <- process_text(text)
+
+    # Hypothesis Classification
     hypothesis.df <- hypothesis_extraction(text_processed, apply_model = FALSE)
 
-    # Test if empty
-    hypothesis_empty_check <- hypothesis.df %>%
+    # Test if hypothesis detected
+    hypothesis_detect_test <- hypothesis.df %>%
       dplyr::pull(hypothesis)
 
-    hypothesis_empty <- purrr::is_empty(hypothesis_empty_check)
+    hypothesis_detected <- !(purrr::is_empty(hypothesis_detect_test))
 
-    if (!(hypothesis_empty)) {
-      ## Entity extraction
+    if (hypothesis_detected) {
+      # Entity extraction
       entities <- entity_extraction(hypothesis.df)
 
-      # Test if empty
-      empty_entity_check <- entities %>%
-        tidyr::drop_na() %>%
-        dplyr::pull(cause)
+      # Causality classification
+      causality_class <- causality_classification(hypothesis.df)
+      causality_class <- data.frame(causality_class)
 
-      entity_empty <- purrr::is_empty(empty_entity_check)
+      # Direction class
+      direction_class <- direction_classification(hypothesis.df)
+      direction_class <- data.frame(direction_class)
 
-      if (!(entity_empty)) {
-        # Causality classification
-        causality_class <- causality_classification(hypothesis.df)
-        causality_class <- data.frame(causality_class)
+      # Compile table
+      iter.df <- compile_table(
+        hypothesis = hypothesis.df,
+        entities   = entities,
+        causality  = causality_class,
+        direction  = direction_class,
+        file_name  = file_name
+        )
 
-        # Direction class
-        direction_class <- direction_classification(hypothesis.df)
-        direction_class <- data.frame(direction_class)
-
-        # Compile table
-        iter.df <- compile_table(
-          hypothesis = hypothesis.df,
-          entities   = entities,
-          causality  = causality_class,
-          direction  = direction_class,
-          file_name  = file_name
+      # Extract hypothesis tag
+      iter.df <- iter.df %>%
+        dplyr::mutate(
+          hypothesis = gsub(
+            pattern = "hypo (.*?):\\s*",
+            replacement = "",
+            x = hypothesis
           )
+        )
 
-        # Extract hypothesis tag
-        iter.df <- iter.df %>%
-          dplyr::mutate(
-            hypothesis = gsub(
-              pattern = "hypo (.*?):\\s*",
-              replacement = "",
-              x = hypothesis
-            )
-          )
+      # Remove trailing commas from cause, effect (for aesthetics)
+      iter.df$cause <- gsub(",$", "", iter.df$cause)
+      iter.df$effect <- gsub(",$", "", iter.df$effect)
 
+      # Store in List
+      lst_output[[i]] <- iter.df
 
-        # Remove trailing commas from cause, effect (for aesthetics)
-        iter.df$cause <- gsub(",$", "", iter.df$cause)
-        iter.df$effect <- gsub(",$", "", iter.df$effect)
+      # Store file name
+      names_process_complete <- c(names_process_complete, file_name)
 
-        # Store in List
-        lst_output[[i]] <- iter.df
-        i <- i + 1
-      }
+     message(file_name)
+
     } else {
-      no_hypothesis<- paste("File ",file_name ,": Hypothesis not detected.")
-      message(no_hypothesis)
-      next
-    }
+      # Store file name
+      names_h_detect_fail <- c(names_h_detect_fail, file_name)
 
-    pdf_complete_message <- paste("File ", file_name,": Complete")
-    message(pdf_complete_message)
+      message(file_name)
+    }
   }
+
+  message("Causality Extraction Process: Complete")
+
+  # Output messages to console
+  ## Define messages
+  message.v <- c(
+    "File(s) did not successfully convert to text:",
+    "Hypothesis/Proposition(s) were not detected:",
+    "Process successfully complete:"
+  )
+
+  ## Define file name vector list
+  list_file_names <- list(
+    "text" = names_pdf2text_fail,
+    "hypothesis" = names_h_detect_fail,
+    "success" = names_process_complete
+  )
+
+  message("")
+  message("PROCESS STATUS REPORT")
+  # Output messages
+  for (i in seq_along(message.v)) {
+
+    file_names <- list_file_names[[i]]
+
+    if (!(purrr::is_empty(file_names))){
+
+      output_message(
+        message = message.v[i],
+        file_names = list_file_names[[i]]
+      )
+      }
+    }
 
   # Group Output Table for All Files into one table
   output_df <- dplyr::bind_rows(lst_output)
 
-  # Remove causality predictions if both entities are not generated
-  output_df <- remove_pred(output_df)
+  # Replace if dataframe is empty (for shiny output)
+  if (nrow(output_df) != 0) {
 
-  # Rename entity columns
-  output_df <- output_df %>%
-    dplyr::rename(
-      variable_1 = cause,
-      variable_2 = effect
+    # Remove causality predictions if both entities are not generated
+    output_df <- remove_pred(output_df)
+
+    # Rename entity columns
+    output_df <- output_df %>%
+      dplyr::rename(
+        variable_1 = cause,
+        variable_2 = effect
+      )
+  } else {
+
+    output_df <- data.frame(
+      file_name = character(),
+      hypothesis_num = character(),
+      hypothesis = character(),
+      variable_1 = character(),
+      variable_2 = character(),
+      direction = character(),
+      causal_relationship = character(),
+      stringsAsFactors=FALSE
+    )
+  }
+
+  output_list <-
+    list(
+      "table" = output_df,
+      "file_names" = list_file_names
     )
 
-  output_df
+  output_list
+
+}
+
+
+
+#' Causality extraction process
+#'
+#' Executes the complete causality extraction process, returning a dataframe of
+#'  extracted hypotheses, along with extracted entities, causality class, and
+#'  direction class.
+#'
+#' @param file_path Path or character vector of paths to PDF documents to be
+#'  processed.This parameter or **folder_path** must be provided. If both
+#'  parameters are provided, the input in this parameter will be processed and
+#'  **folder_path** will be ignored.
+#'
+#' @param folder_path Path to folder containing PDF documents to be
+#'  processed. All PDF documents in the folder specified will be processed.
+#'  This call is not recursive, so no PDF documents in sub-folders will be
+#'  processed. This parameter or **file_path** must be provided. If both
+#'  parameters are provided, the input in **file_path** will be processed and
+#'  this parameter will be ignored.
+#'
+#'@export
+
+CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
+
+  output_results <- causality_extraction_complete(
+    file_path   = file_path,
+    folder_path = folder_path
+    )
+
+  output_table <- output_results[['table']]
+
+  if (nrow(output_table) == 0) {
+    warning("No hypothesis detected with input.")
+    NA
+  } else {
+    output_table
+  }
 
 }

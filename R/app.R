@@ -6,8 +6,17 @@
 #' @noRd
 
 # Constants
-h_warning <- paste("Hypotheses were not extracted from the",
-                   "following uploaded documents:")
+process_report_message <- paste(
+  "The following documents did not yield extracted hypoteses/propositions. "
+  )
+
+empty_table <- paste(
+  "No records to display. ",
+  "See Process Status Report for details.",
+  sep = ""
+)
+
+
 
 # UI ---------------------------------------------------------------------------
 ui <- shiny::fluidPage(
@@ -24,15 +33,16 @@ ui <- shiny::fluidPage(
             font-size: 2vw;
              }"
       ),
-      shiny::HTML("#no_hypothesis_html_list{
-           font-size: 14px;
-           font-style: italic;
-           }"
+      shiny::HTML(
+        "#missing_file_message_html{
+          font-size: 14px;
+          }"
       ),
-      shiny::HTML("ul {
-      padding-left: 1.1em;
-      list-style-type: square;
-      }"
+      shiny::HTML(
+        "ul {
+          padding-left: 2.1em;
+          list-style-type: square;
+        }"
       )
     )
   ),
@@ -53,10 +63,10 @@ ui <- shiny::fluidPage(
       ),
       shinyjs::hidden(
         shiny::wellPanel(
-          id="panel_no_hypothesis",
-          shiny::titlePanel("Note"),
-          shiny::h5(h_warning),
-          shiny::htmlOutput(outputId = "no_hypothesis_html_list")
+          id="panel_missing_files",
+          shiny::titlePanel("Process Status Report"),
+          # shiny::h5(process_report_message),
+          shiny::htmlOutput(outputId = "missing_file_message_html")
         )
       )
     ),
@@ -78,6 +88,9 @@ ui <- shiny::fluidPage(
 
 # Server -----------------------------------------------------------------------
 server <- function(input, output) {
+  # Set local app options
+  set_options()
+
   # --- Reactive Values ---------------------------------------------------- #
 
   # Generate CausalityExtraction output table
@@ -88,98 +101,102 @@ server <- function(input, output) {
     # Execute package
     output_list <- gen_causality_extraction_output(input$file)
 
-    output_table <- output_list[[2]]
-
-    # Verify that hypothesis was detected
-    if ((purrr::is_empty(output_table))) {
-
-      shiny::showNotification(
-        ui = "No Hypotheses Detected",
-        duration = 30,
-        type = "message"
-      )
-    }
     output_list
-  })
-
-  # Generate list of documents that did not return a hypothesis statement
-  docs_wo_hypothesis <- shiny::reactive({
-
-    docs_w_hypothesis <- file_name <- file_name_pdf <- NULL
-
-    output_list <- causality_extraction_output()
-
-    # Generate tables
-    lookup_table <- output_list[[1]]
-    output_table <- output_list[[2]]
-
-    # Define document sets
-    all_documents <- lookup_table %>%
-      dplyr::pull(file_name_pdf)
-
-    if (!(purrr::is_empty(output_table))) {
-
-      docs_w_hypothesis <- output_table %>%
-        dplyr::select(file_name) %>%
-        dplyr::distinct() %>%
-        dplyr::pull()
-
-      # Determine documents loaded without hypothesis
-      docs_wo_hypothesis <- setdiff(all_documents, docs_w_hypothesis)
-
-    } else (docs_wo_hypothesis <- all_documents)
-
-    docs_wo_hypothesis
-
   })
 
 
   # --- Outputs to UI ----------------------------------------------------------
-  # Hide/Show download button
+  # Hide/Show
+  ## Table download button
   shiny::observe({
     shinyjs::hide("download_table")
 
     output_list <- causality_extraction_output()
-    output_table <- output_list[[2]]
+    output_table <- output_list[["table"]]
 
-    if(!(purrr::is_empty(output_table))) {
+    if((nrow(output_table) != 0)) {
       shinyjs::show("download_table")
     }
   })
 
-  # Hide/Show no hypothesis detected
+  ## Panel - hypothesis not detected
   shiny::observe({
-    if(!(purrr::is_empty(docs_wo_hypothesis()))) {
-      shinyjs::show(id="panel_no_hypothesis")
+
+    output_list <- causality_extraction_output()
+
+    # Import Lists of files that are not included in output table
+    h_files <- output_list[["file_names"]][["hypothesis"]]
+    pdf2_text_files <- output_list[["file_names"]][["text"]]
+
+    # Check to see if vectors are empty
+    h_files_not_empty <- !(purrr::is_empty(h_files))
+    pdf2_text_files_not_empty <- !(purrr::is_empty(pdf2_text_files))
+
+    if(h_files_not_empty || pdf2_text_files_not_empty) {
+      shinyjs::show(id="panel_missing_files")
     } else {
-      shinyjs::hide(id="panel_no_hypothesis")
+      shinyjs::hide(id="panel_missing_files")
     }
   })
 
   # Display output table
   output$causality_extraction_table <- DT::renderDT({
     output_list <- causality_extraction_output()
-    output_table <- output_list[[2]]
+    output_table <- output_list[["table"]]
+
     output_table
-  })
 
-  # Display documents without hypotheses
-  output$no_hypothesis_html_list<- shiny::renderUI({
-    input.v <- docs_wo_hypothesis()
+  }, options =
+    list(
+      searching = FALSE,
+      paging = FALSE,
+      language = list(
+        emptyTable = empty_table
+        )
+      )
+  )
 
-    # Generate HMTL list format
-    output_html <- knitr::combine_words(
-      words = input.v,
-      before = '<li>',
-      after = "</li>",
-      and = " ",
-      sep = " ")
+  # Display list of inputs not in output table
+  output$missing_file_message_html<- shiny::renderUI({
+    output_list <- causality_extraction_output()
 
-    output_html <- paste("<ul>", output_html, "</ul>", sep = " ")
+    # Extract lists of files
+    files <- output_list[["file_names"]]
 
+    # Define intro messages
+    intro_messages <- list(
+      "text" = "File(s) did not successfully convert to text:" ,
+      "hypothesis" = "Hypothesis/Proposition(s) were not detected:",
+      "success" = "Process successfully complete:"
+    )
+
+     # Define conditions detected during process
+    conditions_detected <- names(files)
+
+    # Initialize output vector
+    output_html <- c()
+
+    # Generate html string
+
+    for (condition in conditions_detected){
+
+      # Ignore successful files
+      if (condition == "success") next
+
+      message <- intro_messages[[condition]]
+      file_names <- files[[condition]]
+
+      # Generate output html
+      html_string <- gen_file_message_html(
+        message = message,
+        files   = file_names
+        )
+
+      # Append to list
+      output_html <- c(output_html, html_string)
+    }
     shiny::HTML(output_html)
   })
-
 
   # --- Download ---------------------------------------------------------------
   output$download_table <- shiny::downloadHandler(
@@ -194,7 +211,7 @@ server <- function(input, output) {
     content = function(file) {
 
       output_list <- causality_extraction_output()
-      output_table <- output_list[[2]]
+      output_table <- output_list[["table"]]
 
       vroom::vroom_write(
         output_table,
@@ -215,8 +232,10 @@ server <- function(input, output) {
 
 LaunchApp <- function() {
 
-  # Run the application
+  # Load shinyjs
+  shinyjs::useShinyjs()
 
+  # Run the application
   shiny::runApp(list(ui = ui, server = server),
                 launch.browser = TRUE)
 }

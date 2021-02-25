@@ -20,5 +20,7 @@ parameters are provided, the input in \strong{file_path} will be processed and
 this parameter will be ignored.}
 }
 \description{
-Executes the complete causality extraction process.
+Executes the complete causality extraction process, returning a dataframe of
+extracted hypotheses, along with extracted entities, causality class, and
+direction class.
 }

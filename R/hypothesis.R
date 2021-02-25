@@ -134,16 +134,16 @@ unique_hypothesis_labels <- function(hypothesis_labels) {
   )
 
   # Check if hypothesis label contains letters
-  logical_hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
+  log_hypothesis_labels_alpha <- grepl("[a-zA-Z]", hypothesis_labels)
 
   # Initialize
   h_num_output <- c()
   h_label_output <- c()
 
-  for (i in seq_along(logical_hypothesis_labels_alpha)) {
+  for (i in seq_along(log_hypothesis_labels_alpha)) {
 
     # Extract values at index i
-    h_label_alpha <- logical_hypothesis_labels_alpha[i]
+    h_label_alpha <- log_hypothesis_labels_alpha[i]
     h_num <- hypothesis_numbers[i]
     h_label <- hypothesis_labels[i]
 
@@ -262,12 +262,12 @@ hypothesis_extraction <- function(input_text, apply_model = FALSE){
     unlist()
 
   # Select vector elements which contain hypothesis tags
-  logical_hypothesis_tag <- stringr::str_detect(
+  log_hypothesis_tag <- stringr::str_detect(
     string  = split_text,
     pattern = hypothesis_tag
   )
 
-  hypothesis <- split_text[logical_hypothesis_tag]
+  hypothesis <- split_text[log_hypothesis_tag]
 
   # Remove vector elements with token counts below minimum threshold
   hypothesis <- drop_hypothesis_below_min_threshold(hypothesis)
@@ -328,12 +328,12 @@ hypothesis_extraction <- function(input_text, apply_model = FALSE){
     stringr::str_remove_all("hypo ") %>%
     stringr::str_remove_all(":")
 
-  # # Drop ~Hypo #:~ for entity extraction input
-  # hypothesis <- gsub(
-  #   pattern     = "hypo (.*?):\\s*",
-  #   replacement = "",
-  #   x           =  hypothesis
-  #   )
+  # Drop ~Hypo #:~ for entity extraction input
+  hypothesis <- gsub(
+    pattern     = "hypo (.*?):\\s*",
+    replacement = "",
+    x           =  hypothesis
+    )
 
   # Create Dataframe with hypothesis number and hypothesis
   df_hypothesis <- data.frame(
