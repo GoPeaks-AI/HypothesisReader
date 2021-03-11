@@ -330,7 +330,7 @@ hypothesis_extraction <- function(input_text, apply_model = FALSE){
 
   # Drop ~Hypo #:~ for entity extraction input
   hypothesis <- gsub(
-    pattern     = "hypo (.*?):\\s*",
+    pattern     = hypothesis_tag,
     replacement = "",
     x           =  hypothesis
     )
