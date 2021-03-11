@@ -288,6 +288,21 @@ index_to_entity <- function(hypothesis, entity_index_input) {
 }
 
 
+#' Drop trailing stopwords
+#'
+#' Removes last token(s) if they are a stopword
+#'
+#' @param hypothesis hypothesis statement text, string
+#' @param entity_text_input entity text, output of
+#'  [index_to_entity()]
+#'
+#' @noRd
+
+remove_trailing_stopwords <- function(entity_text_input) {
+  # Initialize
+}
+
+
 #' Extract entity clauses (single case)
 #'
 #' Wrapper function. Executes all steps in the entity  extraction process for
@@ -343,6 +358,13 @@ entity_extraction <- function(hypothesis.df){
   # Extract entity extraction hypothesis input
   hypothesis.v <- hypothesis.df %>%
     dplyr::pull(hypothesis)
+
+  # Replace & with and
+  hypothesis.v <- hypothesis.v %>%
+    stringr::str_replace_all(
+      pattern = "&",
+      replacement = "and"
+      )
 
   # Initialize output list
   num_hypothesis <- length(hypothesis.v)
