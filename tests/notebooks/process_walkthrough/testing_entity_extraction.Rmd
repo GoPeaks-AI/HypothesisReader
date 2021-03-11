@@ -48,7 +48,7 @@ pdf_paths <- list.files(recursive = FALSE,
                        path = folder_path, 
                        pattern = ".pdf", 
                        full.names = TRUE)
-pdf_path <-pdf_paths[8]
+pdf_path <- pdf_paths[8]
 print(pdf_path)
 ```
 
@@ -294,6 +294,12 @@ str_entites
 paste0("Entity 1 - Text: ", str_entites[1])
 paste0("Entity 2 - Text: ", str_entites[2])
 ```
+
+## Trailing Stopwords
+```{r}
+
+```
+
 
 # Wrapper Functions
 ## Individual Hypothesis

@@ -45,15 +45,15 @@ print(pdf_paths)
 # Preceding Steps
 ## Process Text
 ```{r}
-m = 1
-n = 5
+m = 15
+n = 0
 input_path <- pdf_paths[m:(m+n)]
 input_path
 
 text_raw <- pdf_to_text(input_path)
 text_raw_sample <- text_raw[1]
 text_processed <- process_text(text_raw_sample)
-# text_raw
+text_processed
 # inspect(text_processed.v, m = 180)
 ```
 
@@ -114,6 +114,12 @@ entity_text_output <- index_to_entity(hypothesis, index_entities)
 entity_text_output
 
 ```
+
+## Drop Trailing Stopwords
+```{r}
+
+```
+
 
 ## Final Function
 ```{r}

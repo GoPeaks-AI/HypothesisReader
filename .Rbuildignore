@@ -8,6 +8,7 @@
 ^\.github$
 ^sample_documents$
 ^inst/extdata/sample_documents$
+^tests/notebooks$
 ^README\.Rmd$
 ^.Rprofile\.Rmd$
 ^.Rhistory\.Rmd$
