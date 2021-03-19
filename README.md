@@ -27,6 +27,8 @@ The **CausalityExtraction** package utilizes Python in addition to R. Therefore,
 ## Prerequisites
 The **CausalityExtraction** package was developed R Version 4.0.2.
 
+The package requires ```Java 8``` or ```OpenJDK 1.8```. Higher versions will also work. To verify the Java version on your machine, enter ```java -version``` in a terminal. Installation information on Java can be found at [https://www.java.com/en/download/](https://www.java.com/en/download/) or [http://openjdk.java.net/install/](http://openjdk.java.net/install/).
+
 The **CausalityExtraction** package is currently not on the Comprehensive R Archive Network (CRAN). To use, it must be installed from the package’s GitHub repository. It is strongly recommended to use the [devtools](https://www.rdocumentation.org/packages/devtools) package to assist in installation. 
 
 The [devtools](https://www.rdocumentation.org/packages/devtools) package can be installed with the following:
