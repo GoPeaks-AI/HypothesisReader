@@ -24,6 +24,33 @@ After this hypothesis is extracted from the source academic paper, it is reduced
 The **CausalityExtraction** package utilizes Python in addition to R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **CausalityExtraction** package downloads and configures the Python infrastructure for the user. This is the default method for using this package. If the user wishes to manually set-up the Python connection, information about the required Python version and Python package versions are described in [Configure Python Environment](#configure-python-environment).
   
 # Installation
+## Quick Set-Up
+The following is for the quick set-up and installation of the R package. Further detail for each of these steps is provided in the sections below.
+### Prerequisites
+
+1. Java 8 or OpenJDK 1.8
+2. R package **devtools**
+
+### Installation/ Set-Up
+
+1. Install R package from GitHub repository
+```
+devtools::canfielder/CausalityExtraction
+```
+2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
+```
+CausalityExtraction::LaunchApp()
+```
+3. At the prompt in the console, select _**y**_ to install Miniconda.
+4. Restart R session (Session > Restart).
+5. Package is now ready for use.
+
+### Troubleshooting
+1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
+```
+CausalityExtraction::InstallCausalityExtraction()
+```
+
 ## Prerequisites
 The **CausalityExtraction** package was developed R Version 4.0.2.
 
