@@ -237,6 +237,8 @@ message("PROCESS STATUS REPORT")
 output_df <- dplyr::bind_rows(lst_output)
 
 output_df %>% glimpse()
+
+output_df
 ```
 
 
@@ -246,6 +248,8 @@ output_df %>% glimpse()
 output_df <- remove_pred(output_df)
 
 output_df %>% glimpse()
+
+output_df
 ```
 
 ### Rename Columns
