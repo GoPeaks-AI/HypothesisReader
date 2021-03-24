@@ -58,13 +58,13 @@ gen_direction_class <- function(model_input) {
 #' Direction classification
 #'
 #' Wrapper function. Executes all steps in the direction classification process.
-#' The causality classification model was trained under the following
+#' The direction classification model was trained under the following
 #' conditions :
 #'  * Token normalization method: stemming
 #'  * Cause/Effect entity replacement: no
 #'  * Imbalanced Sampling: no
 #'  * Feature processing: Bag-of-words
-#'  * Model: Support Vector Machines
+#'  * Model: Logistic Regression
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'

@@ -61,10 +61,10 @@ gen_causality_class <- function(model_input) {
 #' The causality classification model was trained under the following
 #' conditions :
 #'  * Token normalization method: stemming
-#'  * Cause/Effect entity replacement: yes
+#'  * Cause/Effect entity replacement: no
 #'  * Imbalanced Sampling: no
 #'  * Feature processing: Bag-of-words
-#'  * Model: Naive Bayes - Multinomial
+#'  * Model: Logistic Regression
 #'
 #' @param hypothesis_df hypothesis statement output of [hypothesis_extraction()]
 #'
@@ -76,7 +76,7 @@ causality_classification <- function(hypothesis_df) {
   # Process hypothesis into model input
   model_input <- gen_causality_direction_model_input(
     hypothesis_df = hypothesis_df,
-    entity_extraction = TRUE,
+    entity_extraction = FALSE,
     token_method = "stem"
     )
 

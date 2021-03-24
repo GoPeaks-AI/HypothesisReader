@@ -106,16 +106,21 @@ compile_table <- function(hypothesis, entities, causality,
 #'  correct file name when using the shiny app. Shiny renames the file names
 #'  inside file paths after upload.
 #'
+#'
 #'@noRd
 
 
-causality_extraction_complete <- function(file_path = NULL, folder_path = NULL,
-                                file_names = NULL) {
+causality_extraction_complete <- function(
+  file_path = NULL,
+  folder_path = NULL,
+  file_names = NULL
+  ) {
   # For R CMD Checks
   causal_relationship <- causality_pred <- cause <- direction <-  NULL
   direction_pred <- effect <- error <- file_name <-  NULL
   file_names_hy_not_detected <- file_names_text_conv_fail <- h_id <- NULL
-  hypothesis <- hypothesis_num <- text_raw <- variable_1 <- variable_2 <- NULL
+  hypothesis <- hypothesis_num <- remove_pred_flag <- text_raw <- NULL
+  variable_1 <- variable_2 <- NULL
 
   # Create File List -----------------------------------------------------------
   pdf_path <- c()
@@ -275,8 +280,13 @@ causality_extraction_complete <- function(file_path = NULL, folder_path = NULL,
   # Replace if dataframe is empty (for shiny output)
   if (nrow(output_df) != 0) {
 
-    # Remove causality predictions if both entities are not generated
-    output_df <- remove_pred(output_df)
+    # Set to False because we are not using entity extraction in causality
+    # models
+    remove_pred_flag <- FALSE
+    if (remove_pred_flag) {
+      # Remove causality predictions if both entities are not generated
+      output_df <- remove_pred(output_df)
+    }
 
     # Rename entity columns
     output_df <- output_df %>%
