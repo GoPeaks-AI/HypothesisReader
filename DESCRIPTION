@@ -1,6 +1,6 @@
 Package: CausalityExtraction
 Title: Causal Knowledge Extraction from Scholarly Papers in Social Sciences
-Version: 0.0.5.200
+Version: 0.0.5.300
 Authors@R: 
     person(given = "Evan",
            family = "Canfield",
