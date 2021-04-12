@@ -1,18 +1,18 @@
-#' Causality extraction process
-#'
-#' Executes the complete causality extraction process.
-#'
+#' Install python packages
+#' 
+#' Forces the install of the required python packages.
+#' 
 #' @param method Installation method. By default, "auto" automatically finds a
 #' method that will work in the local environment. Change the default to force
 #' a specific installation method. Note that the "virtualenv" method is not
 #' available on Windows.
 #'
-#' @param conda The path to a conda executable. Use "auto" to allow Reticulate
-#' to automatically find an appropriate conda binary.
+#' @param conda The path to a conda executable. Use "auto" to allow 
+#' **Reticulate** to automatically find an appropriate conda binary.
 #'
 #' @export
 
-InstallCausalityExtraction <- function(method = "auto", conda = "auto") {
+InstallPythonPackages <- function(method = "auto", conda = "auto") {
   reticulate::py_install("joblib==1.0.0", method = method,
                          conda = conda, pip = TRUE)
 
@@ -27,6 +27,9 @@ InstallCausalityExtraction <- function(method = "auto", conda = "auto") {
 
   reticulate::py_install("tensorflow==2.4.0", method = method,
                          conda = conda, pip = TRUE)
+  
+  # Set TensorFlow environmental variable to quiet output on start-up
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 3)
 
 
 }

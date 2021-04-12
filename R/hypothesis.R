@@ -1,7 +1,13 @@
-# Import Hypothesis Classification model
+#' Retrieve path to hypothesis classification model
+#'
+#' Retrieves the path to the hypothesis classification model. This prevents a
+#' hard path being defined, which would cause an error when verifying
+#' staged installation.
+#'
+#' @noRd
 get_path_ft_model <- function() {
   system.file("extdata", "models","fasttext_model.bin",
-              package = 'CausalityExtraction')
+              package = 'HypothesisReader')
 }
 
 ft_model <- fastTextR::ft_load(get_path_ft_model())

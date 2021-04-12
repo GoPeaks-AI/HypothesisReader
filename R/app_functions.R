@@ -1,12 +1,12 @@
-#' Generate CausalityExtraction table
+#' Generate HypothesisReader table
 #'
-#' Generate output table of the CausalityExtraction function.
+#' Generate output table of the HypothesisReader function.
 #'
 #' @param file_properties shiny defined properties of uploaded files
 #'
 #' @noRd
 
-gen_causality_extraction_output <- function(file_properties) {
+gen_hypothesis_reader_output <- function(file_properties) {
   # For RMD Check
   file_names_pdf <- file_names_temp <- NULL
 
@@ -16,7 +16,7 @@ gen_causality_extraction_output <- function(file_properties) {
   file_names_temp <- basename(file_paths)
 
   # Generate output table, with temporary file names
-  output_list <- causality_extraction_complete(
+  output_list <- hypothesis_reader_complete(
     file_path = file_paths,
     file_names = file_names_pdf
     )

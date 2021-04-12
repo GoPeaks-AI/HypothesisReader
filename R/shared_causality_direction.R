@@ -1,5 +1,5 @@
 #' The following script contains functions related to the common processes for
-#' the Causality and Direction classification models
+#' the causality and direction classification models
 
 #' Download wordnet library for NLTK lemmatizer
 #'
@@ -233,15 +233,15 @@ gen_causality_direction_model_input <- function(
 #' Remove classification predictions if both entity nodes are not
 #' detected
 #'
-#' Removes the causality classification prediction if both Cause
-#' and Effect entities are not detected.
+#' Removes the causality classification prediction if both node 
+#' entities are not detected.
 #'
-#' @param CausalityExtractionTable Output of [CausalityExtraction()]
+#' @param HypothesisReaderTable Output of [HypothesisReader()]
 #'
 #' @noRd
 #
 
-remove_pred <- function(CausalityExtractionTable) {
+remove_pred <- function(HypothesisReaderTable) {
   cause <- causal_relationship <- direction <- effect <- NULL
 
   # Manually assign which predictions to drop based on model pre-processing.
@@ -250,7 +250,7 @@ remove_pred <- function(CausalityExtractionTable) {
 
   if (causality_remove) {
 
-    CausalityExtractionTable <- CausalityExtractionTable %>%
+    HypothesisReaderTable <- HypothesisReaderTable %>%
       dplyr::mutate(
         causal_relationship = dplyr::if_else(
           condition = ((cause == "") | (effect == "")),
@@ -263,7 +263,7 @@ remove_pred <- function(CausalityExtractionTable) {
 
   if (direction_remove) {
 
-    CausalityExtractionTable <- CausalityExtractionTable %>%
+    HypothesisReaderTable <- HypothesisReaderTable %>%
       dplyr::mutate(
         causal_relationship = dplyr::if_else(
           condition = ((cause == "") | (effect == "")),
@@ -275,6 +275,6 @@ remove_pred <- function(CausalityExtractionTable) {
   }
 
   # Return
-  CausalityExtractionTable
+  HypothesisReaderTable
 
 }

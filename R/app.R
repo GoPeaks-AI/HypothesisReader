@@ -1,6 +1,6 @@
-#' Causality Extraction Shiny App
+#' Hypothesis Reader Shiny Application
 #'
-#' Shiny app for generating output tables with CausalityExtraction function.
+#' Shiny app for generating output tables with HypothesisReader function.
 #' Designed to run locally on the users machine.
 #'
 #' @noRd
@@ -47,7 +47,7 @@ ui <- shiny::fluidPage(
     )
   ),
   shinyjs::useShinyjs(),
-  shiny::titlePanel("Causal Knowledge Extraction"),
+  shiny::titlePanel("Hypothesis Reader"),
   shiny::fluidRow(
     ### SIDE
     shiny::column(
@@ -74,7 +74,7 @@ ui <- shiny::fluidPage(
     shiny::column(
       width = 8,
       shinycssloaders::withSpinner(
-        ui_element = DT::DTOutput("causality_extraction_table"),
+        ui_element = DT::DTOutput("hypothesis_reader_table"),
         type       = 1,
         size       = 3
       ),
@@ -93,13 +93,13 @@ server <- function(input, output) {
 
   # --- Reactive Values ---------------------------------------------------- #
 
-  # Generate CausalityExtraction output table
-  causality_extraction_output <- shiny::reactive({
+  # Generate HypothesisReader output table
+  hypothesis_reader_output <- shiny::reactive({
     # Wait until file is uploaded
     shiny::req(input$file)
 
     # Execute package
-    output_list <- gen_causality_extraction_output(input$file)
+    output_list <- gen_hypothesis_reader_output(input$file)
 
     output_list
   })
@@ -111,7 +111,7 @@ server <- function(input, output) {
   shiny::observe({
     shinyjs::hide("download_table")
 
-    output_list <- causality_extraction_output()
+    output_list <- hypothesis_reader_output()
     output_table <- output_list[["table"]]
 
     if((nrow(output_table) != 0)) {
@@ -122,7 +122,7 @@ server <- function(input, output) {
   ## Panel - hypothesis not detected
   shiny::observe({
 
-    output_list <- causality_extraction_output()
+    output_list <- hypothesis_reader_output()
 
     # Import Lists of files that are not included in output table
     h_files <- output_list[["file_names"]][["hypothesis"]]
@@ -140,8 +140,8 @@ server <- function(input, output) {
   })
 
   # Display output table
-  output$causality_extraction_table <- DT::renderDT({
-    output_list <- causality_extraction_output()
+  output$hypothesis_reader_table <- DT::renderDT({
+    output_list <- hypothesis_reader_output()
     output_table <- output_list[["table"]]
 
     output_table
@@ -158,7 +158,7 @@ server <- function(input, output) {
 
   # Display list of inputs not in output table
   output$missing_file_message_html<- shiny::renderUI({
-    output_list <- causality_extraction_output()
+    output_list <- hypothesis_reader_output()
 
     # Extract lists of files
     files <- output_list[["file_names"]]
@@ -202,7 +202,7 @@ server <- function(input, output) {
   output$download_table <- shiny::downloadHandler(
     filename = function() {
       paste(
-        "causality_extraction_",
+        "hypothesis_reader_",
         Sys.Date(),
         ".csv",
         sep = ""
@@ -210,7 +210,7 @@ server <- function(input, output) {
     },
     content = function(file) {
 
-      output_list <- causality_extraction_output()
+      output_list <- hypothesis_reader_output()
       output_table <- output_list[["table"]]
 
       vroom::vroom_write(
@@ -223,9 +223,9 @@ server <- function(input, output) {
 
 }
 
-#' Launch CausalityExtraction Shiny app
+#' Launch app
 #'
-#' Launches the CausalityExtraction shiny app. Runs locally on the users
+#' Launches the HypothesisReader shiny app. Runs locally on the users
 #' machine.
 #'
 #'@export

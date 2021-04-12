@@ -9,7 +9,7 @@
 get_path_causality_model <- function() {
   system.file("extdata", "models",
               "causality.joblib",
-              package = 'CausalityExtraction')
+              package = 'HypothesisReader')
 }
 
 

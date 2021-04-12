@@ -13,19 +13,7 @@ missing_entity_tag <- ""
 
 get_path_entity_model <- function() {
   system.file("extdata", "models","entity_extraction",
-              package = 'CausalityExtraction')
-}
-
-
-#' Retrieve path to entity extraction script
-#'
-#' Retrieves the path to the entity extraction python script.
-#'
-#' @noRd
-
-get_path_entity_script <- function() {
-  system.file("python", "entity.py",
-              package = 'CausalityExtraction')
+              package = 'HypothesisReader')
 }
 
 

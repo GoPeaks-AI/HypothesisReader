@@ -83,10 +83,10 @@ compile_table <- function(hypothesis, entities, causality,
 }
 
 
-#' Causality extraction process - All Outputs
+#' Hypothesis Reader process - Verbose
 #'
-#' Executes the complete causality extraction process. This function outputs
-#'  the causality extraction output table as well as lists of input files
+#' Executes the complete Hypothesis Reader process. This function outputs
+#'  the Hypothesis Reader output table as well as lists of input files
 #'  which failed to convert to text, and which did not contain any hypotheses.
 #'
 #' @param file_path Path or character vector of paths to PDF documents to be
@@ -110,7 +110,7 @@ compile_table <- function(hypothesis, entities, causality,
 #'@noRd
 
 
-causality_extraction_complete <- function(
+hypothesis_reader_complete <- function(
   file_path = NULL,
   folder_path = NULL,
   file_names = NULL
@@ -158,9 +158,9 @@ causality_extraction_complete <- function(
   text_raw <- text_raw[log_pdf2text]
   file_names <- file_names[log_pdf2text]
 
-  # Causality Extraction Process -----------------------------------------------
+  # Hypothesis Reader Process -----------------------------------------------
   message("")
-  message("Causality Extraction Process: Start")
+  message("Hypothesis Reader Process: Start")
 
   # Initialize output vector
   lst_output <- vector(
@@ -198,7 +198,7 @@ causality_extraction_complete <- function(
       causality_class <- causality_classification(hypothesis.df)
       causality_class <- data.frame(causality_class)
 
-      # Direction class
+      # Direction classification
       direction_class <- direction_classification(hypothesis.df)
       direction_class <- data.frame(direction_class)
 
@@ -241,7 +241,7 @@ causality_extraction_complete <- function(
     }
   }
 
-  message("Causality Extraction Process: Complete")
+  message("Hypothesis Reader Process: Complete")
 
   # Output messages to console
   ## Define messages
@@ -259,7 +259,7 @@ causality_extraction_complete <- function(
   )
 
   message("")
-  message("PROCESS STATUS REPORT")
+  message("---------- PROCESS STATUS REPORT ----------")
   # Output messages
   for (i in seq_along(message.v)) {
 
@@ -280,8 +280,8 @@ causality_extraction_complete <- function(
   # Replace if dataframe is empty (for shiny output)
   if (nrow(output_df) != 0) {
 
-    # Set to False because we are not using entity extraction in causality
-    # models
+    # Set to False because we are not using entity extraction in 
+    # causality models
     remove_pred_flag <- FALSE
     if (remove_pred_flag) {
       # Remove causality predictions if both entities are not generated
@@ -319,10 +319,9 @@ causality_extraction_complete <- function(
 }
 
 
-
-#' Causality extraction process
+#' Hypothesis Reader process
 #'
-#' Executes the complete causality extraction process, returning a dataframe of
+#' Executes the complete Hypothesis Reader process, returning a dataframe of
 #'  extracted hypotheses, along with extracted entities, causality class, and
 #'  direction class.
 #'
@@ -340,9 +339,9 @@ causality_extraction_complete <- function(
 #'
 #'@export
 
-CausalityExtraction <- function(file_path = NULL, folder_path = NULL) {
+HypothesisReader <- function(file_path = NULL, folder_path = NULL) {
 
-  output_results <- causality_extraction_complete(
+  output_results <- hypothesis_reader_complete(
     file_path   = file_path,
     folder_path = folder_path
     )

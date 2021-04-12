@@ -700,10 +700,11 @@ text_conversion_test <- function(input_text) {
 #'
 #' Wrapper function. Executes all steps in the process flow converting raw
 #' PDF file into text. This processing step returns text that will be used as
-#' input for the three major functions in the package:
+#' input for the major functions in the package:
 #' * Hypothesis classification
 #' * Entity extraction
 #' * Causality classification
+#' * Direction classification
 #'
 #' @param text_raw Raw PDF converted text
 #' @noRd
@@ -717,7 +718,7 @@ process_text <- function(text_raw){
     stringr::str_split(pattern = "\n") %>%
     unlist()
 
-  # Whitespace -----------------------------------------------------------------
+  # White -space ---------------------------------------------------------------
   # Trim excess - outside and inside strings
   text_processed <- stringr::str_trim(string = text_processed)
   text_processed <- stringr::str_squish(string = text_processed)

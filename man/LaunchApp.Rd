@@ -2,11 +2,11 @@
 % Please edit documentation in R/app.R
 \name{LaunchApp}
 \alias{LaunchApp}
-\title{Launch CausalityExtraction Shiny app}
+\title{Launch app}
 \usage{
 LaunchApp()
 }
 \description{
-Launches the CausalityExtraction shiny app. Runs locally on the users
+Launches the HypothesisReader shiny app. Runs locally on the users
 machine.
 }

@@ -9,7 +9,7 @@
 get_path_direction_model <- function() {
   system.file("extdata", "models",
               "direction.joblib",
-              package = 'CausalityExtraction')
+              package = 'HypothesisReader')
 }
 
 
@@ -80,7 +80,7 @@ direction_classification <- function(hypothesis_df) {
     token_method = "stem"
   )
 
-  # Generate causality predictions
+  # Generate predictions
   direction_pred <- gen_direction_class(model_input)
 
   direction <- data.frame(direction_pred)

@@ -1,15 +1,15 @@
 ^renv$
 ^renv\.lock$
-^CausalityExtraction\.Rproj$
+^HypothesisReader\.Rproj$
 ^.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^\.travis\.yml$
 ^\.github$
-^sample_documents$
 ^inst/extdata/sample_documents$
 ^tests/notebooks$
 ^README\.Rmd$
 ^.Rprofile\.Rmd$
 ^.Rhistory\.Rmd$
 ^.gitignore\.Rmd$
+
