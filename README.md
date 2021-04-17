@@ -1,5 +1,7 @@
 # HypothesisReader
 
+This Repo is imported from https://github.com/canfielder/HypothesisReader
+
   <!-- badges: start -->
   [![R-CMD-check](https://github.com/canfielder/HypothesisReader/workflows/R-CMD-check/badge.svg)](https://github.com/canfielder/HypothesisReader/actions)
   <!-- badges: end -->
