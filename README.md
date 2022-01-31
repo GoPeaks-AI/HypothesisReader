@@ -33,27 +33,7 @@ The following is for the quick set-up and installation of the R package. Further
 1. Java 8 or OpenJDK 1.8
 2. R package **devtools**
 3. ['rtika'](https://github.com/ropensci/rtika) package 
-
-### Installation/ Set-Up
-
-1. Install R package from GitHub repository
-```
-devtools::canfielder/HypothesisReader
-```
-2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
-```
-HypothesisReader::LaunchApp()
-```
-3. At the prompt in the console, select _**y**_ to install Miniconda.
-4. Restart R session (Session > Restart).
-5. Package is now ready for use.
-
-### Troubleshooting
-1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
-```
-HypothesisReader::InstallPythonPackages()
-```
-
+  
 ## Prerequisites
 The **HypothesisReader** package was developed R Version 4.0.2.
 
@@ -76,6 +56,26 @@ install.packages('rtika', repos = 'https://cloud.r-project.org')
 library('rtika')
 # You need to install the Apache Tika .jar once.
 install_tika()
+```
+
+### Installation/ Set-Up
+
+1. Install R package from GitHub repository
+```
+devtools::canfielder/HypothesisReader
+```
+2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
+```
+HypothesisReader::LaunchApp()
+```
+3. At the prompt in the console, select _**y**_ to install Miniconda.
+4. Restart R session (Session > Restart).
+5. Package is now ready for use.
+
+### Troubleshooting
+1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
+```
+HypothesisReader::InstallPythonPackages()
 ```
   
 ## Installing HypothesisReader
