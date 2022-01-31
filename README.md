@@ -59,7 +59,6 @@ install_tika()
 ## Installing HypothesisReader
 
 1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
-
 ```
 devtools::install_github("canfielder/HypothesisReader")
 ```
@@ -67,17 +66,15 @@ or
 ```
 devtools::canfielder/HypothesisReader
 ```
-
-2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
+2. At the prompt in the console, select _**y**_ to install Miniconda.
+3. Restart R session (Session > Restart).
+4. Package is now ready for use.
+5.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
 ```
 HypothesisReader::LaunchApp()
 ```
 
-3. At the prompt in the console, select _**y**_ to install Miniconda.
-4. Restart R session (Session > Restart).
-5. Package is now ready for use.
-
-### Troubleshooting
+## Troubleshooting
 1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
 ```
 HypothesisReader::InstallPythonPackages()
