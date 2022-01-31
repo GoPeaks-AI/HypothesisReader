@@ -28,28 +28,26 @@ The **HypothesisReader** package utilizes Python in addition to R. Therefore, a 
 # Installation
 ## Quick Set-Up
 The following is for the quick set-up and installation of the R package. Further detail for each of these steps is provided in the sections below.
-### Prerequisites
+
+## Prerequisites
 
 1. Java 8 or OpenJDK 1.8
 2. R package **devtools**
 3. ['rtika'](https://github.com/ropensci/rtika) package 
-  
-## Prerequisites
-The **HypothesisReader** package was developed R Version 4.0.2.
 
+The **HypothesisReader** package was developed R Version 4.0.2.
+ 
 The package requires ```Java 8``` or ```OpenJDK 1.8```. Higher versions will also work. To verify the Java version on your machine, enter ```java -version``` in a terminal. Installation information on Java can be found at [https://www.java.com/en/download/](https://www.java.com/en/download/) or [http://openjdk.java.net/install/](http://openjdk.java.net/install/).
 
 The **HypothesisReader** package is currently not on the Comprehensive R Archive Network (CRAN). To use, it must be installed from the package’s GitHub repository. It is strongly recommended to use the [devtools](https://www.rdocumentation.org/packages/devtools) package to assist in installation. 
 
 The [devtools](https://www.rdocumentation.org/packages/devtools) package can be installed with the following:
-
 ```
 # Install devtools from CRAN
 install.packages("devtools")
 ```
 
 Then install ['rtika'](https://github.com/ropensci/rtika) package
-  
 ```
 # Install rtika
 install.packages('rtika', repos = 'https://cloud.r-project.org')
@@ -58,16 +56,23 @@ library('rtika')
 install_tika()
 ```
 
-### Installation/ Set-Up
+## Installing HypothesisReader
 
-1. Install R package from GitHub repository
+1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
+
+```
+devtools::install_github("canfielder/HypothesisReader")
+```
+or
 ```
 devtools::canfielder/HypothesisReader
 ```
+
 2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
 ```
 HypothesisReader::LaunchApp()
 ```
+
 3. At the prompt in the console, select _**y**_ to install Miniconda.
 4. Restart R session (Session > Restart).
 5. Package is now ready for use.
@@ -76,13 +81,6 @@ HypothesisReader::LaunchApp()
 1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
 ```
 HypothesisReader::InstallPythonPackages()
-```
-  
-## Installing HypothesisReader
-With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
-
-```
-devtools::install_github("canfielder/HypothesisReader")
 ```
 
 ## Configure Python Environment
