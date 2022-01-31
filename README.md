@@ -3,7 +3,7 @@
 https://user-images.githubusercontent.com/59463770/116264909-a99c2a80-a748-11eb-9343-b39ab1514d25.mp4
 
   <!-- badges: start -->
-  [![R-CMD-check](https://github.com/canfielder/HypothesisReader/workflows/R-CMD-check/badge.svg)](https://github.com/canfielder/HypothesisReader/actions)
+  [![R-CMD-check](https://github.com/GoPeaks-AI/HypothesisReader/workflows/R-CMD-check/badge.svg)](https://github.com/GoPeaks-AI/HypothesisReader/actions)
   <!-- badges: end -->
 
 The **HypothesisReader** R package supports the analytic methods as described in <insert academic paper>. The main action of this package is to extract any and all hypothesis and/or proposition statements found in the provided documents. Once these statements are extracted, the following key features are generated:
@@ -37,7 +37,7 @@ The following is for the quick set-up and installation of the R package. Further
 
 1. Install R package from GitHub repository
 ```
-devtools::canfielder/HypothesisReader
+devtools::GoPeaks-AI/HypothesisReader
 ```
 2.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
 ```
@@ -71,7 +71,7 @@ install.packages(“devtools”)
 With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
 
 ```
-devtools::install_github("canfielder/HypothesisReader")
+devtools::install_github("GoPeaks-AI/HypothesisReader")
 ```
 
 ## Configure Python Environment
