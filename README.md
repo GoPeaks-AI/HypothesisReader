@@ -32,6 +32,7 @@ The following is for the quick set-up and installation of the R package. Further
 
 1. Java 8 or OpenJDK 1.8
 2. R package **devtools**
+3. ['rtika'](https://github.com/ropensci/rtika) package 
 
 ### Installation/ Set-Up
 
@@ -64,9 +65,17 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 
 ```
 # Install devtools from CRAN
-install.packages(“devtools”)
+install.packages("devtools")
 ```
-
+  
+```
+# Install rtika
+install.packages('rtika', repos = 'https://cloud.r-project.org')
+library('rtika')
+# You need to install the Apache Tika .jar once.
+install_tika()
+```
+  
 ## Installing HypothesisReader
 With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
 
