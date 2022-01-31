@@ -67,6 +67,8 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 # Install devtools from CRAN
 install.packages("devtools")
 ```
+
+Then install ['rtika'](https://github.com/ropensci/rtika) package
   
 ```
 # Install rtika
