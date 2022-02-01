@@ -50,7 +50,7 @@ install.packages("devtools")
 Then install ['rtika'](https://github.com/ropensci/rtika) package
 The package rtika is a dependent package for HypothesisReader and must be installed before the package can be used.
 ```
-devtools::install_github("ropensci/rtika"")
+devtools::install_github("ropensci/rtika")
 ```
 or
 ```
