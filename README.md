@@ -70,13 +70,14 @@ or
 ```
 devtools::canfielder/HypothesisReader
 ```
+Then, launch the RShiny GUI
+```
+HypothesisReader::LaunchApp()
+```
 2. At the prompt in the console, select _**y**_ to install Miniconda.
 3. Restart R session (Session > Restart).
 4. Package is now ready for use.
 5.	Execute function below and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation.
-```
-HypothesisReader::LaunchApp()
-```
 
 ## Troubleshooting
 1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
