@@ -39,7 +39,6 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 # Install devtools from CRAN
 install.packages("devtools")
 ```
-
 ### 3. ['rtika'](https://github.com/ropensci/rtika) package 
 The package rtika is a dependent package for HypothesisReader and must be installed before the package can be used.
 ```
