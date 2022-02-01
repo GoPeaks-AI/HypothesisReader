@@ -26,19 +26,12 @@ After this hypothesis is extracted from the source academic paper, it is reduced
 The **HypothesisReader** package utilizes Python in addition to R. Therefore, a Python interpreter must be installed on any machine running said package. Through the R package [Reticulate](https://rstudio.github.io/reticulate/), the **HypothesisReader** package downloads and configures the Python infrastructure for the user. This is the default method for using this package. If the user wishes to manually set-up the Python connection, information about the required Python version and Python package versions are described in [Configure Python Environment](#configure-python-environment).
   
 # Installation
-## Quick Set-Up
-The following is for the quick set-up and installation of the R package. Further detail for each of these steps is provided in the sections below.
-
 ## Prerequisites
-
-1. Java 8 or OpenJDK 1.8
-2. R package **devtools**
-3. ['rtika'](https://github.com/ropensci/rtika) package 
-
 The **HypothesisReader** package was developed R Version 4.0.2.
- 
+### 1. Java 8 or OpenJDK 1.8
 The package requires ```Java 8``` or ```OpenJDK 1.8```. Higher versions will also work. To verify the Java version on your machine, enter ```java -version``` in a terminal. Installation information on Java can be found at [https://www.java.com/en/download/](https://www.java.com/en/download/) or [http://openjdk.java.net/install/](http://openjdk.java.net/install/).
 
+### 2. R package **devtools**
 The **HypothesisReader** package is currently not on the Comprehensive R Archive Network (CRAN). To use, it must be installed from the package’s GitHub repository. It is strongly recommended to use the [devtools](https://www.rdocumentation.org/packages/devtools) package to assist in installation. 
 
 The [devtools](https://www.rdocumentation.org/packages/devtools) package can be installed with the following:
@@ -47,7 +40,7 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 install.packages("devtools")
 ```
 
-Then install ['rtika'](https://github.com/ropensci/rtika) package
+### 3. ['rtika'](https://github.com/ropensci/rtika) package 
 The package rtika is a dependent package for HypothesisReader and must be installed before the package can be used.
 ```
 devtools::install_github("ropensci/rtika")
@@ -60,8 +53,7 @@ library('rtika')
 install_tika()
 ```
 
-## Installing HypothesisReader
-
+### Instal and initiate HypothesisReader
 1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
 ```
 devtools::install_github("canfielder/HypothesisReader")
@@ -87,7 +79,7 @@ HypothesisReader::LaunchApp()
 HypothesisReader::InstallPythonPackages()
 ```
 
-## Configure Python Environment
+## Configure Python Environment (Optional)
 ### Python Interpreter
 The **HypothesisReader** package will automatically configure the Python environment, with minimal input by the user. Once the package is installed, all the user has to do is attempt to use the function *HypothesisReader* or attempt to process a PDF document through the provided Shiny app, accessed from the function *LaunchApp* (see [Usage](#usage) below).
 
