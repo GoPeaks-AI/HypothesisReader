@@ -48,8 +48,12 @@ install.packages("devtools")
 ```
 
 Then install ['rtika'](https://github.com/ropensci/rtika) package
+The package rtika is a dependent package for HypothesisReader and must be installed before the package can be used.
 ```
-# Install rtika
+devtools::install_github("ropensci/rtika"")
+```
+or
+```
 install.packages('rtika', repos = 'https://cloud.r-project.org')
 library('rtika')
 # You need to install the Apache Tika .jar once.
