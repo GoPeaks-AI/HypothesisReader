@@ -3,7 +3,7 @@
 https://user-images.githubusercontent.com/59463770/116264909-a99c2a80-a748-11eb-9343-b39ab1514d25.mp4
 
   <!-- badges: start -->
-  [![R-CMD-check](https://github.com/canfielder/HypothesisReader/workflows/R-CMD-check/badge.svg)](https://github.com/canfielder/HypothesisReader/actions)
+  [![R-CMD-check](https://github.com/GoPeaks-AI/HypothesisReader/workflows/R-CMD-check/badge.svg)](https://github.com/GoPeaks-AI/HypothesisReader/actions)
   <!-- badges: end -->
 
 The **HypothesisReader** R package supports the analytic methods as described in <insert academic paper>. The main action of this package is to extract any and all hypothesis and/or proposition statements found in the provided documents. Once these statements are extracted, the following key features are generated:
@@ -39,27 +39,15 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 # Install devtools from CRAN
 install.packages("devtools")
 ```
-### 3. ['rtika'](https://github.com/ropensci/rtika) package 
-The package rtika is a dependent package for HypothesisReader and must be installed before the package can be used.
-```
-devtools::install_github("ropensci/rtika")
-```
-or
-```
-install.packages('rtika', repos = 'https://cloud.r-project.org')
-library('rtika')
-# You need to install the Apache Tika .jar once.
-install_tika()
-```
 
-### Instal and initiate HypothesisReader
-1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package can be installed by executing the following:
+### Install and Initiate HypothesisReader
+1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package is installed by executing the following:
 ```
-devtools::install_github("canfielder/HypothesisReader")
+devtools::install_github("GoPeaks-AI/HypothesisReader")
 ```
 or
 ```
-devtools::canfielder/HypothesisReader
+devtools::GoPeaks-AI/HypothesisReader
 ```
 2. Launch the RShiny GUI. Execute function above and attempt to process a PDF file. The initial processing of a PDF will prompt Python installation. 
 ```
@@ -77,6 +65,12 @@ HypothesisReader::LaunchApp()
 ```
 HypothesisReader::InstallPythonPackages()
 ```
+
+2. Conversion of PDF files to text relies on the **rtika** package, which is a dependency and will automatically install when installing the **HypothesisReader** package. Successful use of the **rtika** package requires the installation of the Tika App jar file to the users local machine. Installation of **HypothesisReader** should install thsi file automatically, but if an error in the PDF conversion to text occurs, first ensure that the Tika App jar file is installed via the following function:
+```
+rtika::install_tika()
+```
+
 
 ## Configure Python Environment (Optional)
 ### Python Interpreter
