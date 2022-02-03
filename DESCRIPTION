@@ -37,6 +37,7 @@ Imports:
     memoise,
     purrr,
     reticulate,
+    rtika,
     shiny,
     shinycssloaders,
     shinyjs,
