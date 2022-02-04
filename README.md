@@ -1,5 +1,7 @@
 # HypothesisReader
 
+#### Developed by Evan Canfield (Allstate) and Victor Zitian Chen (UNCC; GoPeaks)
+
 https://user-images.githubusercontent.com/59463770/116264909-a99c2a80-a748-11eb-9343-b39ab1514d25.mp4
 
   <!-- badges: start -->
@@ -40,7 +42,7 @@ The [devtools](https://www.rdocumentation.org/packages/devtools) package can be 
 install.packages("devtools")
 ```
 
-### Install and Initiate HypothesisReader
+### 3. Install and Initiate HypothesisReader
 1. Install R package from GitHub repository. With [devtools](https://www.rdocumentation.org/packages/devtools) installed, the **HypothesisReader** package is installed by executing the following:
 ```
 devtools::install_github("GoPeaks-AI/HypothesisReader")
@@ -60,7 +62,7 @@ HypothesisReader::LaunchApp()
 ```
 HypothesisReader::LaunchApp()
 ```
-## Troubleshooting
+### Troubleshooting
 1. If all of the required Python packages do not automatically install (which would yield an error), installation can be forced with the following function:
 ```
 HypothesisReader::InstallPythonPackages()
@@ -72,8 +74,8 @@ rtika::install_tika()
 ```
 
 
-## Configure Python Environment (Optional)
-### Python Interpreter
+### Configure Python Environment (Optional)
+#### Python Interpreter
 The **HypothesisReader** package will automatically configure the Python environment, with minimal input by the user. Once the package is installed, all the user has to do is attempt to use the function *HypothesisReader* or attempt to process a PDF document through the provided Shiny app, accessed from the function *LaunchApp* (see [Usage](#usage) below).
 
 Once the package begins processing a PDF, it will search for the required Python configuration. If it has not yet been set up, the [Reticulate](https://rstudio.github.io/reticulate/) package will prompt the user to install the Miniconda installer. The prompt will generate on the RStudio console. To install, the user must enter **y**.
@@ -84,7 +86,7 @@ After installation is complete, it is recommended the user restart the R session
 
 The [Reticulate](https://rstudio.github.io/reticulate/) package downloads a version of Miniconda containing Python 3.6.
 
-### Python Packages
+#### Python Packages
 The **HypothesisReader** package is constructed to work with the following Python packages:
 
 * [Joblib - Version 1.0.0](https://pypi.org/project/joblib/1.0.0/)
@@ -93,7 +95,7 @@ The **HypothesisReader** package is constructed to work with the following Pytho
 * [Scikit-Learn – Version 0.23.2](https://pypi.org/project/scikit-learn/0.23.2/)
 * [TensorFlow – Version 2.4.0](https://pypi.org/project/tensorflow/2.4.0/)
 
-# Usage
+## Usage
 The main action of the **HypothesisReader** package (as described above) is accomplished through two functions: *HypothesisReader* and *LauchApp*.
 
 _**HypothesisReader**_
@@ -106,5 +108,5 @@ This function provides a Graphical User Interface through a Shiny app to perform
 
 **Note:** The app launches using the default web browser for the local machine. If the Shiny app does not launch after running this function, please check your browser's pop-up settings.
 
-### Additional
+## Additional
 The function *InstallPythonPackages* is also provided in the package. This function is to manually install the required Python packages, and should only be used if the default installation process failed. 
