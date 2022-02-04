@@ -66,7 +66,7 @@ HypothesisReader::LaunchApp()
 HypothesisReader::InstallPythonPackages()
 ```
 
-2. Conversion of PDF files to text relies on the **rtika** package, which is a dependency and will automatically install when installing the **HypothesisReader** package. Successful use of the **rtika** package requires the installation of the Tika App jar file to the users local machine. Installation of **HypothesisReader** should install thsi file automatically, but if an error in the PDF conversion to text occurs, first ensure that the Tika App jar file is installed via the following function:
+2. Conversion of PDF files to text relies on the **rtika** package, which is a dependency and will automatically install when installing the **HypothesisReader** package. Successful use of the **rtika** package requires the installation of the Tika App jar file to the users local machine. Installation of **HypothesisReader** should install the file automatically, but if an error in the PDF conversion to text occurs, first ensure that the Tika App jar file is installed via the following function:
 ```
 rtika::install_tika()
 ```

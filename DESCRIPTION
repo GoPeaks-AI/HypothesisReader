@@ -1,6 +1,6 @@
 Package: HypothesisReader
 Title: Hypothesis Extraction and Analysis for Scholarly Papers in Social Sciences
-Version: 0.0.5.500
+Version: 0.0.6.1
 Authors@R: 
     person(given = "Evan",
            family = "Canfield",
