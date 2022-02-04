@@ -1,5 +1,7 @@
 # HypothesisReader
 
+Developed by Evan Canfield (Allstate) and Victor Zitian Chen (UNCC; GoPeaks)
+
 https://user-images.githubusercontent.com/59463770/116264909-a99c2a80-a748-11eb-9343-b39ab1514d25.mp4
 
   <!-- badges: start -->
